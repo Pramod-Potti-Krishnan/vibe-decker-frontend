@@ -972,7 +972,7 @@ export default function BuilderPage() {
 
       <SettingsDialog isOpen={showSettings} onClose={() => setShowSettings(false)} user={user} />
 
-      <ShareDialog isOpen={showShare} onClose={() => setShowShare(false)} />
+      <ShareDialog isOpen={showShare} onClose={() => setShowShare(false)} presentationTitle="Untitled Presentation" />
 
       <VersionHistory
         isOpen={showVersions}
