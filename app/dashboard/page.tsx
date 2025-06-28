@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
+
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,7 +27,7 @@ interface Presentation {
 }
 
 export default function DashboardPage() {
-  const { user, logout } = useAuth()
+  const { user, logout, isLoading } = useAuth()
   const [presentations, setPresentations] = useState<Presentation[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const router = useRouter()
@@ -89,6 +92,18 @@ export default function DashboardPage() {
   )
 
   // User authentication is handled by middleware
+  
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -144,7 +159,7 @@ export default function DashboardPage() {
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}!</h1>
+          <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.name || 'there'}!</h1>
           <p className="text-slate-600">Ready to create amazing presentations with your AI agent team?</p>
         </div>
 

@@ -4,6 +4,9 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/hooks/use-auth"
+
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -115,7 +118,7 @@ interface Presentation {
 }
 
 export default function BuilderPage() {
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -598,6 +601,18 @@ export default function BuilderPage() {
 
   const handleCanvasClick = () => {
     setSelectedElementId(null)
+  }
+
+  // Show loading state while checking authentication
+  if (isAuthLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!user) return null
