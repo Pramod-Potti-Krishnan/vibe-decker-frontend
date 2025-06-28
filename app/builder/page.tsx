@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -114,7 +115,7 @@ interface Presentation {
 }
 
 export default function BuilderPage() {
-  const [user, setUser] = useState<any>(null)
+  const { user } = useAuth()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -145,14 +146,6 @@ export default function BuilderPage() {
   const [isNavPinned, setIsNavPinned] = useState(true)
 
   useEffect(() => {
-    // Check authentication
-    const userData = localStorage.getItem("user")
-    if (!userData) {
-      router.push("/auth/signin")
-      return
-    }
-    setUser(JSON.parse(userData))
-
     // Initialize with welcome message
     setMessages([
       {

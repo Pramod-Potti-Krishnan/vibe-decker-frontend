@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -23,22 +24,12 @@ interface Presentation {
 }
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null)
+  const { user, logout } = useAuth()
   const [presentations, setPresentations] = useState<Presentation[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is authenticated
-    const userData = localStorage.getItem("user")
-    if (!userData) {
-      router.push("/auth/signin")
-      return
-    }
-
-    const parsedUser = JSON.parse(userData)
-    setUser(parsedUser)
-
     // Mock presentations data
     setPresentations([
       {
@@ -74,9 +65,8 @@ export default function DashboardPage() {
     ])
   }, [router])
 
-  const handleSignOut = () => {
-    localStorage.removeItem("user")
-    router.push("/")
+  const handleSignOut = async () => {
+    await logout()
   }
 
   const getStatusColor = (status: string) => {
@@ -98,7 +88,7 @@ export default function DashboardPage() {
       p.description.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  if (!user) return null
+  // User authentication is handled by middleware
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -113,8 +103,8 @@ export default function DashboardPage() {
               <span className="text-xl font-bold">Agentic Deck Builder</span>
             </Link>
             <Badge variant="outline" className="ml-4">
-              {user.tier === "free" ? "Free Plan" : user.tier === "pro" ? "Pro Plan" : "Enterprise"}
-              {user.tier === "pro" && <Crown className="ml-1 h-3 w-3" />}
+              {user?.tier === "free" ? "Free Plan" : user?.tier === "pro" ? "Pro Plan" : "Enterprise"}
+              {user?.tier === "pro" && <Crown className="ml-1 h-3 w-3" />}
             </Badge>
           </div>
 
@@ -130,7 +120,7 @@ export default function DashboardPage() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{user?.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -168,7 +158,7 @@ export default function DashboardPage() {
             <CardContent>
               <div className="text-2xl font-bold">{presentations.length}</div>
               <p className="text-xs text-muted-foreground">
-                {user.tier === "free" ? `${3 - presentations.length} remaining in free plan` : "Unlimited"}
+                {user?.tier === "free" ? `${3 - presentations.length} remaining in free plan` : "Unlimited"}
               </p>
             </CardContent>
           </Card>
