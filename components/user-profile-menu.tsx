@@ -26,7 +26,6 @@ import {
   LogOut,
   Crown,
   Sparkles,
-  ChevronDown,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
@@ -68,38 +67,17 @@ export function UserProfileMenu() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-auto p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          className="relative h-10 w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
         >
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border-2 border-gray-200 dark:border-gray-700">
-              <AvatarImage 
-                src={user.image || undefined} 
-                alt={user.name || "User avatar"}
-              />
-              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-medium">
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-medium leading-none">{user.name || "User"}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {user.tier === "pro" ? (
-                  <span className="flex items-center gap-1">
-                    <Crown className="h-3 w-3" />
-                    Pro Plan
-                  </span>
-                ) : user.tier === "enterprise" ? (
-                  <span className="flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    Enterprise
-                  </span>
-                ) : (
-                  "Free Plan"
-                )}
-              </p>
-            </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
-          </div>
+          <Avatar className="h-10 w-10 border-2 border-gray-200 dark:border-gray-700">
+            <AvatarImage 
+              src={user.image || undefined} 
+              alt={user.name || "User avatar"}
+            />
+            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-medium">
+              {userInitials}
+            </AvatarFallback>
+          </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
