@@ -463,10 +463,10 @@ export default function BuilderPage() {
   }
 
   const handleAttachmentUpload = (files: FileList) => {
-    const newAttachments = Array.from(files).map((file) => ({
+    const newAttachments: Attachment[] = Array.from(files).map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       name: file.name,
-      type: file.type.startsWith("image/")
+      type: (file.type.startsWith("image/")
         ? "image"
         : file.type.startsWith("video/")
           ? "video"
@@ -474,7 +474,7 @@ export default function BuilderPage() {
             ? "audio"
             : file.name.endsWith(".csv") || file.name.endsWith(".xlsx")
               ? "data"
-              : "document",
+              : "document") as "document" | "image" | "video" | "audio" | "data",
       size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
       uploadedAt: new Date(),
       url: URL.createObjectURL(file),
