@@ -28,16 +28,22 @@ export default function SignInPage() {
       setIsLoading(true)
       setError(null)
       
+      console.log("Starting Google sign in...")
+      
       const result = await signIn("google", {
         callbackUrl: "/builder",
         redirect: true,
       })
       
+      console.log("Sign in result:", result)
+      
       if (result?.error) {
+        console.error("Sign in error:", result.error)
         setError("Failed to sign in with Google. Please try again.")
         setIsLoading(false)
       }
     } catch (error) {
+      console.error("Sign in exception:", error)
       setError("An unexpected error occurred. Please try again.")
       setIsLoading(false)
     }
