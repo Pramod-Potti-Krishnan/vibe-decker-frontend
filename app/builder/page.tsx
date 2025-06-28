@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { UserProfileMenu } from "@/components/user-profile-menu"
 import {
   Sparkles,
   Users,
@@ -658,6 +659,8 @@ export default function BuilderPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
+          <Separator orientation="vertical" className="h-6" />
+          <UserProfileMenu />
         </div>
       </header>
 

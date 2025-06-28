@@ -110,6 +110,36 @@ This document outlines the implementation plan for transforming Deckster from a 
 - [ ] Create higher-order component for protected pages
 - [x] Update all protected pages (dashboard, builder)
 
+### 1.8 User Profile Menu & Account Management
+- [ ] Create profile dropdown menu component
+- [ ] Add user avatar with Google profile image
+- [ ] Implement profile menu items:
+  - [ ] View Profile (name, email, member since)
+  - [ ] Account Settings
+  - [ ] Billing & Subscription (link to billing page)
+  - [ ] Theme Toggle (dark/light mode)
+  - [ ] Keyboard Shortcuts
+  - [ ] Help & Support
+  - [ ] Sign Out
+- [ ] Create profile page (`/app/profile/page.tsx`)
+  - [ ] Display user information
+  - [ ] Edit profile functionality
+  - [ ] Change display name
+  - [ ] Upload custom avatar
+  - [ ] Email preferences
+- [ ] Create account settings page (`/app/settings/account/page.tsx`)
+  - [ ] Account information
+  - [ ] Privacy settings
+  - [ ] Data export
+  - [ ] Delete account option
+- [ ] Add keyboard shortcuts modal
+- [ ] Implement theme switching with next-themes
+- [ ] Create help/support page with:
+  - [ ] Documentation links
+  - [ ] Contact support
+  - [ ] FAQ
+  - [ ] Video tutorials
+
 ## Phase 2: Stripe Payment Integration
 
 ### 2.1 Stripe Setup
