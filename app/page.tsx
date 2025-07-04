@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,11 +7,6 @@ import { ArrowRight, Sparkles, Users, Zap, Check } from "lucide-react"
 import Link from "next/link"
 
 export default function LandingPage() {
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    setIsVisible(true)
-  }, [])
 
   const features = [
     {
@@ -90,7 +84,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold">Agentic Deck Builder</span>
+            <span className="text-xl font-bold">deckster.xyz</span>
           </div>
           <div className="flex items-center space-x-4">
             <Link href="/auth/signin">
@@ -105,9 +99,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 text-center">
-        <div
-          className={`transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
-        >
+        <div className="opacity-100 translate-y-0">
           <Badge className="mb-4 bg-purple-100 text-purple-700 hover:bg-purple-200">Powered by Multi-Agent AI</Badge>
           <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Build Presentations with
@@ -218,9 +210,9 @@ export default function LandingPage() {
               <div className="w-6 h-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded flex items-center justify-center">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
-              <span className="font-semibold">Agentic Deck Builder</span>
+              <span className="font-semibold">deckster.xyz</span>
             </div>
-            <p className="text-sm text-slate-500">© 2024 Agentic Deck Builder. All rights reserved.</p>
+            <p className="text-sm text-slate-500">© 2024 deckster.xyz. All rights reserved.</p>
           </div>
         </div>
       </footer>

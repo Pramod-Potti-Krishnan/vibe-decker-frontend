@@ -123,23 +123,29 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
           </Button>
         </div>
 
-        {/* Status badges */}
-        {(internetSearchEnabled || attachmentCount > 0) && (
-          <div className="mt-2 flex items-center space-x-2">
-            {internetSearchEnabled && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                <Globe className="mr-1 h-3 w-3" />
-                Internet search on
-              </Badge>
-            )}
-            {attachmentCount > 0 && (
-              <Badge variant="outline" className="text-xs">
-                <Paperclip className="mr-1 h-3 w-3" />
-                {attachmentCount} file{attachmentCount > 1 && "s"}
-              </Badge>
-            )}
+        {/* Status badges - Always reserve space to prevent layout shifts */}
+        <div className="mt-2 flex items-center space-x-2 min-h-[24px]">
+          <div 
+            className={`transition-opacity duration-200 ${
+              internetSearchEnabled ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+              <Globe className="mr-1 h-3 w-3" />
+              Internet search on
+            </Badge>
           </div>
-        )}
+          <div 
+            className={`transition-opacity duration-200 ${
+              attachmentCount > 0 ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <Badge variant="outline" className="text-xs">
+              <Paperclip className="mr-1 h-3 w-3" />
+              {attachmentCount} file{attachmentCount > 1 ? "s" : ""}
+            </Badge>
+          </div>
+        </div>
       </div>
     </TooltipProvider>
   )

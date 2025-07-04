@@ -49,7 +49,7 @@ export function SettingsDialog({ isOpen, onClose, user }: SettingsDialogProps) {
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>Customize your Agentic Deck Builder experience</DialogDescription>
+          <DialogDescription>Customize your deckster.xyz experience</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">

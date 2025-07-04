@@ -15,7 +15,7 @@ export default function OnboardingPage() {
 
   const steps = [
     {
-      title: "Welcome to Agentic Deck Builder",
+      title: "Welcome to deckster.xyz",
       description: "Let's take a quick tour of how AI agents collaborate to create your presentations",
       icon: <Sparkles className="h-8 w-8" />,
       content: (

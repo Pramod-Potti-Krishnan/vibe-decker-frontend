@@ -116,7 +116,7 @@ export default function DashboardPage() {
               <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold">Agentic Deck Builder</span>
+              <span className="text-xl font-bold">deckster.xyz</span>
             </Link>
             <Badge variant="outline" className="ml-4">
               {user?.tier === "free" ? "Free Plan" : user?.tier === "pro" ? "Pro Plan" : "Enterprise"}
