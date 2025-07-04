@@ -13,31 +13,31 @@ export function processDirectorMessage(
   message: DirectorMessage
 ): Partial<PresentationState> {
   const updates: Partial<PresentationState> = {};
-  const { data } = message;
+  // Round 14 fix: chat_data and slide_data are directly on the message, not wrapped in 'data'
 
   // Process slide data
-  if (data.slide_data) {
-    updates.slides = data.slide_data.slides;
-    updates.presentationMetadata = data.slide_data.presentation_metadata;
+  if (message.slide_data) {
+    updates.slides = message.slide_data.slides;
+    updates.presentationMetadata = message.slide_data.presentation_metadata;
   }
 
   // Process chat data
-  if (data.chat_data) {
-    updates.chatMessages = [...state.chatMessages, data.chat_data];
+  if (message.chat_data) {
+    updates.chatMessages = [...state.chatMessages, message.chat_data];
 
     // Handle progress updates
-    if (data.chat_data.progress) {
-      updates.progress = data.chat_data.progress;
+    if (message.chat_data.progress) {
+      updates.progress = message.chat_data.progress;
       
       // Extract agent statuses from progress
-      if (data.chat_data.progress.agentStatuses) {
-        updates.agentStatuses = data.chat_data.progress.agentStatuses;
+      if (message.chat_data.progress.agentStatuses) {
+        updates.agentStatuses = message.chat_data.progress.agentStatuses;
       }
     }
 
     // Handle phase changes
-    if (data.chat_data.type === 'progress' && data.chat_data.content.message.includes('Phase')) {
-      updates.phase = extractPhaseFromMessage(data.chat_data.content.message);
+    if (message.chat_data.type === 'progress' && message.chat_data.content.message.includes('Phase')) {
+      updates.phase = extractPhaseFromMessage(message.chat_data.content.message);
     }
   }
 
@@ -88,29 +88,30 @@ export const presentationActions = {
       { type: 'ADD_DIRECTOR_MESSAGE', payload: message }
     ];
 
+    // Round 14 fix: chat_data and slide_data are directly on the message, not wrapped in 'data'
     // Process slide updates
-    if (message.data.slide_data) {
+    if (message.slide_data) {
       actions.push({
         type: 'UPDATE_SLIDES',
         payload: {
-          slides: message.data.slide_data.slides,
-          metadata: message.data.slide_data.presentation_metadata
+          slides: message.slide_data.slides,
+          metadata: message.slide_data.presentation_metadata
         }
       });
     }
 
     // Process chat data
-    if (message.data.chat_data) {
+    if (message.chat_data) {
       actions.push({
         type: 'ADD_CHAT_MESSAGE',
-        payload: message.data.chat_data
+        payload: message.chat_data
       });
 
       // Process progress
-      if (message.data.chat_data.progress) {
+      if (message.chat_data.progress) {
         actions.push({
           type: 'UPDATE_PROGRESS',
-          payload: message.data.chat_data.progress
+          payload: message.chat_data.progress
         });
       }
     }

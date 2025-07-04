@@ -67,10 +67,9 @@ export interface SystemMessage extends BaseMessage {
 export interface DirectorMessage extends BaseMessage {
   type: 'director_message';  // Backend sends 'director_message' - Round 12 change was incorrect
   source: 'director_inbound' | 'director_outbound';
-  data: {
-    slide_data?: SlideData;
-    chat_data?: ChatData;
-  };
+  // Round 14 fix: chat_data and slide_data are at root level, not wrapped in 'data'
+  chat_data?: ChatData;
+  slide_data?: SlideData;
 }
 
 export interface ErrorMessage {

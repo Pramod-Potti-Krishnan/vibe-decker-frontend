@@ -199,22 +199,15 @@ export class DecksterClient extends EventEmitter {
   private handleDirectorMessage(message: DirectorMessage): void {
     this.emit('director_message', message);
 
-    // IMPORTANT: data field may be undefined or missing chat_data/slide_data
-    if (!message.data) {
-      console.warn('Director message missing data field:', message);
-      return;
-    }
-
-    const { data } = message;
-
+    // Round 14 fix: chat_data and slide_data are directly on the message, not wrapped in 'data'
     // Emit chat-specific events (chat_data is optional!)
-    if (data.chat_data) {
-      const chatType = data.chat_data.type;
+    if (message.chat_data) {
+      const chatType = message.chat_data.type;
       this.emit(`chat_${chatType}` as WebSocketEventType, message);
     }
 
     // Emit slide update events (slide_data is optional!)
-    if (data.slide_data?.slides && data.slide_data.slides.length > 0) {
+    if (message.slide_data?.slides && message.slide_data.slides.length > 0) {
       this.emit('slides_update', message);
     }
   }

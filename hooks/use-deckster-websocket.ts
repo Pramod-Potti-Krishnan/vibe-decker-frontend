@@ -159,21 +159,19 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
               messages: [...prev.messages, message] 
             };
 
-            // Check if data exists before accessing its properties
-            if (message.data) {
-              // Update slides if present
-              if (message.data.slide_data) {
-                newState.slides = message.data.slide_data;
-              }
+            // Round 14 fix: chat_data and slide_data are directly on the message, not wrapped in 'data'
+            // Update slides if present
+            if (message.slide_data) {
+              newState.slides = message.slide_data;
+            }
 
-              // Update chat messages if present
-              if (message.data.chat_data) {
-                newState.chatMessages = [...prev.chatMessages, message.data.chat_data];
-                
-                // Update progress if present
-                if (message.data.chat_data.progress) {
-                  newState.progress = message.data.chat_data.progress;
-                }
+            // Update chat messages if present
+            if (message.chat_data) {
+              newState.chatMessages = [...prev.chatMessages, message.chat_data];
+              
+              // Update progress if present
+              if (message.chat_data.progress) {
+                newState.progress = message.chat_data.progress;
               }
             }
 
