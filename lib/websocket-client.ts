@@ -13,6 +13,7 @@ import {
 
 export interface DecksterClientConfig {
   url?: string;
+  httpUrl?: string;
   reconnectDelay?: number;
   maxReconnectDelay?: number;
   maxReconnectAttempts?: number;
@@ -40,7 +41,8 @@ export class DecksterClient extends EventEmitter {
   constructor(config: DecksterClientConfig = {}) {
     super();
     this.config = {
-      url: config.url || process.env.NEXT_PUBLIC_WS_URL || 'wss://api.deckster.xyz/ws',
+      url: config.url || process.env.NEXT_PUBLIC_WS_URL || 'wss://deckster-production.up.railway.app',
+      httpUrl: config.httpUrl || process.env.NEXT_PUBLIC_API_HTTP_URL || 'https://deckster-production.up.railway.app',
       reconnectDelay: config.reconnectDelay || 1000,
       maxReconnectDelay: config.maxReconnectDelay || 30000,
       maxReconnectAttempts: config.maxReconnectAttempts || 5,
@@ -54,11 +56,11 @@ export class DecksterClient extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       try {
-        // Include JWT in connection URL
-        this.ws = new WebSocket(`${this.config.url}?token=${encodeURIComponent(token)}`);
+        // Include JWT in connection URL as recommended in the guide
+        this.ws = new WebSocket(`${this.config.url}/ws?token=${encodeURIComponent(token)}`);
 
         this.ws.onopen = () => {
-          console.log('WebSocket connected');
+          console.log('✅ WebSocket connected successfully');
           this.connected = true;
           this.reconnectAttempts = 0;
           this.startHeartbeat();
@@ -77,7 +79,7 @@ export class DecksterClient extends EventEmitter {
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          console.error('❌ WebSocket error:', error);
           this.emit('error', error);
           if (this.ws?.readyState === WebSocket.CONNECTING) {
             reject(error);
@@ -93,8 +95,17 @@ export class DecksterClient extends EventEmitter {
     });
   }
 
-  private handleMessage(message: ServerMessage): void {
-    // Handle auth responses
+  private handleMessage(message: any): void {
+    // Handle connection success message
+    if (message.type === 'connection' && message.status === 'connected') {
+      this.sessionId = message.session_id;
+      console.log('✅ Session established:', this.sessionId);
+      this.emit('authenticated', { session_id: message.session_id });
+      this.processMessageQueue();
+      return;
+    }
+
+    // Handle auth responses (legacy format)
     if (isAuthResponseMessage(message)) {
       this.handleAuthResponse(message);
       return;
@@ -157,7 +168,7 @@ export class DecksterClient extends EventEmitter {
   }
 
   private handleClose(event: CloseEvent): void {
-    console.log('WebSocket closed:', event.code, event.reason);
+    console.log('🔌 WebSocket closed:', event.code, event.reason);
     this.connected = false;
     this.stopHeartbeat();
     this.emit('disconnected', event);
@@ -168,6 +179,13 @@ export class DecksterClient extends EventEmitter {
       pending.reject(new Error('Connection closed'));
     });
     this.pendingMessages.clear();
+
+    // Handle authentication failures
+    if (event.code === 1008) {
+      console.error('❌ Authentication failed - WebSocket closed with policy violation');
+      this.emit('auth_failed', { reason: event.reason || 'Missing or invalid authentication token' });
+      return;
+    }
 
     // Attempt reconnection if not a normal closure
     if (event.code !== 1000 && this.reconnectAttempts < this.config.maxReconnectAttempts) {
@@ -182,7 +200,7 @@ export class DecksterClient extends EventEmitter {
     );
 
     this.reconnectAttempts++;
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`);
+    console.log(`🔄 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`);
 
     this.reconnectTimer = setTimeout(async () => {
       try {
@@ -198,7 +216,7 @@ export class DecksterClient extends EventEmitter {
           }
         }
       } catch (error) {
-        console.error('Reconnection failed:', error);
+        console.error('❌ Reconnection failed:', error);
       }
     }, delay);
   }
@@ -232,6 +250,7 @@ export class DecksterClient extends EventEmitter {
     }
 
     this.ws.send(JSON.stringify(fullMessage));
+    console.log('📤 Sent:', fullMessage);
     return fullMessage;
   }
 
