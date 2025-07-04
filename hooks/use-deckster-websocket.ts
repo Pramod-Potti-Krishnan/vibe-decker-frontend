@@ -49,10 +49,13 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
     sessionId: null,
     error: null,
     messages: [],
-    slides: null,
+    slides: null,  // Round 16: This should match SlideData | null type
     chatMessages: [],
     progress: null
   });
+  
+  // Round 16 Debug: Log initial state
+  console.log('[Round 16 Debug] Initial state.slides:', state.slides);
 
   const clientRef = useRef<DecksterClient | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
@@ -153,7 +156,12 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
         });
 
         client.on('director_message', (message: DirectorMessage) => {
+          console.log('[Round 16 Debug] Received director_message:', message);
+          
           setState(prev => {
+            console.log('[Round 16 Debug] Previous state.slides:', prev.slides);
+            console.log('[Round 16 Debug] Is prev.slides an array?', Array.isArray(prev.slides));
+            
             const newState = { 
               ...prev, 
               messages: [...prev.messages, message] 
@@ -162,19 +170,27 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
             // Round 14 fix: chat_data and slide_data are directly on the message, not wrapped in 'data'
             // Round 15 fix: Extract slides array from slide_data object
             if (message.slide_data?.slides) {
+              console.log('[Round 16 Debug] message.slide_data:', message.slide_data);
+              console.log('[Round 16 Debug] message.slide_data.slides:', message.slide_data.slides);
+              console.log('[Round 16 Debug] Is message.slide_data.slides an array?', Array.isArray(message.slide_data.slides));
               newState.slides = message.slide_data.slides;
             }
 
             // Update chat messages if present
             if (message.chat_data) {
+              console.log('[Round 16 Debug] message.chat_data:', message.chat_data);
               newState.chatMessages = [...prev.chatMessages, message.chat_data];
               
               // Update progress if present
               if (message.chat_data.progress) {
+                console.log('[Round 16 Debug] message.chat_data.progress:', message.chat_data.progress);
                 newState.progress = message.chat_data.progress;
               }
             }
 
+            console.log('[Round 16 Debug] New state.slides:', newState.slides);
+            console.log('[Round 16 Debug] Is newState.slides an array?', Array.isArray(newState.slides));
+            
             return newState;
           });
         });
