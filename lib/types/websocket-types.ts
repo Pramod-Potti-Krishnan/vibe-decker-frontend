@@ -27,6 +27,10 @@ export interface PingMessage {
   type: 'ping';
 }
 
+export interface PongMessage {
+  type: 'pong';
+}
+
 export interface RestoreSessionMessage {
   type: 'restore_session';
   session_id: string;
@@ -61,7 +65,7 @@ export interface SystemMessage extends BaseMessage {
 }
 
 export interface DirectorMessage extends BaseMessage {
-  type: 'director';  // Changed from 'director_message' to match backend
+  type: 'director_message';  // Backend sends 'director_message' - Round 12 change was incorrect
   source: 'director_inbound' | 'director_outbound';
   data: {
     slide_data?: SlideData;
@@ -183,7 +187,8 @@ export function isUserInputMessage(msg: any): msg is UserInputMessage {
 }
 
 export function isDirectorMessage(msg: any): msg is DirectorMessage {
-  return msg?.type === 'director';  // Fixed to match backend
+  // Support both variations temporarily - backend sends 'director_message'
+  return msg?.type === 'director_message' || msg?.type === 'director';
 }
 
 export function isConnectionMessage(msg: any): msg is ConnectionMessage {
@@ -231,4 +236,5 @@ export type ServerMessage =
   | ConnectionMessage
   | SystemMessage
   | AuthResponseMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | PongMessage;
