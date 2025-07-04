@@ -160,9 +160,9 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
             };
 
             // Round 14 fix: chat_data and slide_data are directly on the message, not wrapped in 'data'
-            // Update slides if present
-            if (message.slide_data) {
-              newState.slides = message.slide_data;
+            // Round 15 fix: Extract slides array from slide_data object
+            if (message.slide_data?.slides) {
+              newState.slides = message.slide_data.slides;
             }
 
             // Update chat messages if present

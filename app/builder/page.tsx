@@ -459,7 +459,7 @@ function BuilderContent() {
             <div className="bg-white border-t p-4">
               <ScrollArea className="w-full">
                 <div className="flex gap-4">
-                  {state.slides.map((slide, index) => (
+                  {state.slides && Array.isArray(state.slides) && state.slides.map((slide, index) => (
                     <button
                       key={slide.slide_id}
                       onClick={() => handleSlideChange(index)}
@@ -477,7 +477,7 @@ function BuilderContent() {
                       </div>
                     </button>
                   ))}
-                  {state.slides.length === 0 && (
+                  {(!state.slides || !Array.isArray(state.slides) || state.slides.length === 0) && (
                     <div className="w-32 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
                       <Plus className="h-6 w-6 text-gray-400" />
                     </div>
