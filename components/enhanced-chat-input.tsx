@@ -9,15 +9,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Send, Paperclip, Globe, GlobeIcon as GlobeOff } from "lucide-react"
 
 export interface EnhancedChatInputProps {
-  inputMessage: string
-  onInputChange: (value: string) => void
-  onSendMessage: () => void
-  onKeyPress: (e: React.KeyboardEvent) => void
-  onFileUpload: (files: FileList) => void
-  internetSearchEnabled: boolean
-  onInternetSearchToggle: (enabled: boolean) => void
+  value: string
+  onChange: (value: string) => void
+  onSend: (message: string) => void
+  onFileAttach?: (files: File[]) => void
   isLoading: boolean
-  attachmentCount: number
+  internetSearchEnabled?: boolean
+  onToggleInternetSearch?: () => void
+  placeholder?: string
+  connectionState?: string
+  isReady?: boolean
 }
 
 /**
@@ -28,20 +29,55 @@ export interface EnhancedChatInputProps {
  *  • Send button
  */
 export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
-  inputMessage,
-  onInputChange,
-  onSendMessage,
-  onKeyPress,
-  onFileUpload,
-  internetSearchEnabled,
-  onInternetSearchToggle,
+  value,
+  onChange,
+  onSend,
+  onFileAttach,
   isLoading,
-  attachmentCount,
+  internetSearchEnabled = false,
+  onToggleInternetSearch,
+  placeholder = "Ask the AI agents anything...",
+  connectionState,
+  isReady = true,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) onFileUpload(e.target.files)
+    if (e.target.files && onFileAttach) {
+      const filesArray = Array.from(e.target.files)
+      onFileAttach(filesArray)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading && value.trim() && isReady) {
+      e.preventDefault()
+      onSend(value)
+    }
+  }
+
+  const handleSendMessage = () => {
+    if (!isLoading && value.trim() && isReady) {
+      onSend(value)
+    }
+  }
+
+  const getConnectionStatusMessage = () => {
+    if (!isReady) {
+      switch (connectionState) {
+        case 'connecting':
+          return 'Connecting to AI agents...'
+        case 'connected':
+          return 'Authenticating...'
+        case 'error':
+          return 'Connection failed. Please try again.'
+        case 'disconnected':
+          return 'Disconnected from AI agents'
+        default:
+          return 'Connecting...'
+      }
+    }
+    return placeholder
   }
 
   return (
@@ -49,73 +85,74 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
       <div className="border-t bg-white p-4">
         <div className="flex items-end space-x-2">
           {/* File upload */}
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif,.mp4,.mov,.mp3,.wav,.csv,.xlsx,.json"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+          {onFileAttach && (
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif,.mp4,.mov,.mp3,.wav,.csv,.xlsx,.json"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!isReady}
+                    aria-label="Upload files"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Upload files</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+
+          {/* Internet search toggle */}
+          {onToggleInternetSearch && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="relative h-8 w-8 p-0"
-                  onClick={() => fileInputRef.current?.click()}
-                  aria-label="Upload files"
+                  className={`h-8 w-8 p-0 ${
+                    internetSearchEnabled
+                      ? "text-green-600 hover:text-green-700 bg-green-50"
+                      : "text-slate-400 hover:text-slate-600"
+                  }`}
+                  onClick={onToggleInternetSearch}
+                  disabled={!isReady}
+                  aria-label="Toggle internet search"
                 >
-                  <Paperclip className="h-4 w-4" />
-                  {attachmentCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-[10px] leading-none">
-                      {attachmentCount}
-                    </Badge>
-                  )}
+                  {internetSearchEnabled ? <Globe className="h-4 w-4" /> : <GlobeOff className="h-4 w-4" />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Upload files</TooltipContent>
+              <TooltipContent>
+                {internetSearchEnabled ? "Internet search enabled" : "Internet search disabled"}
+              </TooltipContent>
             </Tooltip>
-          </div>
-
-          {/* Internet search toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-8 w-8 p-0 ${
-                  internetSearchEnabled
-                    ? "text-green-600 hover:text-green-700 bg-green-50"
-                    : "text-slate-400 hover:text-slate-600"
-                }`}
-                onClick={() => onInternetSearchToggle(!internetSearchEnabled)}
-                aria-label="Toggle internet search"
-              >
-                {internetSearchEnabled ? <Globe className="h-4 w-4" /> : <GlobeOff className="h-4 w-4" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {internetSearchEnabled ? "Internet search enabled" : "Internet search disabled"}
-            </TooltipContent>
-          </Tooltip>
+          )}
 
           {/* Text input */}
           <Input
-            value={inputMessage}
-            onChange={(e) => onInputChange(e.target.value)}
-            onKeyPress={onKeyPress}
-            disabled={isLoading}
-            placeholder="Describe your presentation or ask for changes..."
-            className="flex-1 min-h-[40px]"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isLoading || !isReady}
+            placeholder={getConnectionStatusMessage()}
+            className={`flex-1 min-h-[40px] ${!isReady ? 'opacity-60' : ''}`}
           />
 
           {/* Send */}
           <Button
             size="sm"
-            onClick={onSendMessage}
-            disabled={isLoading || !inputMessage.trim()}
+            onClick={handleSendMessage}
+            disabled={isLoading || !value.trim() || !isReady}
             aria-label="Send message"
             className="h-10"
           >
@@ -125,26 +162,32 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
 
         {/* Status badges - Always reserve space to prevent layout shifts */}
         <div className="mt-2 flex items-center space-x-2 min-h-[24px]">
-          <div 
-            className={`transition-opacity duration-200 ${
-              internetSearchEnabled ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
+          {/* Connection status indicator */}
+          {!isReady && (
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${
+                connectionState === 'connecting' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                connectionState === 'error' ? 'bg-red-50 text-red-700 border-red-200' :
+                'bg-gray-50 text-gray-700 border-gray-200'
+              }`}
+            >
+              <div className={`mr-1 h-2 w-2 rounded-full ${
+                connectionState === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                connectionState === 'error' ? 'bg-red-500' :
+                'bg-gray-500'
+              }`} />
+              {getConnectionStatusMessage()}
+            </Badge>
+          )}
+          
+          {/* Internet search status */}
+          {internetSearchEnabled && isReady && (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
               <Globe className="mr-1 h-3 w-3" />
               Internet search on
             </Badge>
-          </div>
-          <div 
-            className={`transition-opacity duration-200 ${
-              attachmentCount > 0 ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            <Badge variant="outline" className="text-xs">
-              <Paperclip className="mr-1 h-3 w-3" />
-              {attachmentCount} file{attachmentCount > 1 ? "s" : ""}
-            </Badge>
-          </div>
+          )}
         </div>
       </div>
     </TooltipProvider>

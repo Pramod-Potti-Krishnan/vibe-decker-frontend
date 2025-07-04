@@ -25,6 +25,8 @@ export class DecksterClient extends EventEmitter {
   private config: Required<DecksterClientConfig>;
   private ws: WebSocket | null = null;
   private connected = false;
+  private isInitialized = false;
+  private isConnecting = false;
   private sessionId: string | null = null;
   private token: string | null = null;
   private pendingMessages = new Map<string, {
@@ -52,6 +54,19 @@ export class DecksterClient extends EventEmitter {
   }
 
   async connect(token: string): Promise<void> {
+    // Prevent multiple simultaneous connection attempts
+    if (this.isConnecting) {
+      console.log('🔄 Connection already in progress, skipping...');
+      return;
+    }
+
+    if (this.isInitialized && this.connected) {
+      console.log('✅ Already connected, skipping...');
+      return;
+    }
+
+    console.log('🔌 Starting WebSocket connection...');
+    this.isConnecting = true;
     this.token = token;
 
     return new Promise((resolve, reject) => {
@@ -62,6 +77,8 @@ export class DecksterClient extends EventEmitter {
         this.ws.onopen = () => {
           console.log('✅ WebSocket connected successfully');
           this.connected = true;
+          this.isInitialized = true;
+          this.isConnecting = false;
           this.reconnectAttempts = 0;
           this.startHeartbeat();
           this.emit('connected');
@@ -80,6 +97,7 @@ export class DecksterClient extends EventEmitter {
 
         this.ws.onerror = (error) => {
           console.error('❌ WebSocket error:', error);
+          this.isConnecting = false;
           this.emit('error', error);
           if (this.ws?.readyState === WebSocket.CONNECTING) {
             reject(error);
@@ -90,6 +108,7 @@ export class DecksterClient extends EventEmitter {
           this.handleClose(event);
         };
       } catch (error) {
+        this.isConnecting = false;
         reject(error);
       }
     });
@@ -170,6 +189,8 @@ export class DecksterClient extends EventEmitter {
   private handleClose(event: CloseEvent): void {
     console.log('🔌 WebSocket closed:', event.code, event.reason);
     this.connected = false;
+    this.isInitialized = false;
+    this.isConnecting = false;
     this.stopHeartbeat();
     this.emit('disconnected', event);
 
@@ -236,7 +257,19 @@ export class DecksterClient extends EventEmitter {
     }
   }
 
-  async send(message: Omit<ClientMessage, 'message_id' | 'timestamp' | 'session_id'>): Promise<ClientMessage> {
+  async send(message: Omit<ClientMessage, 'message_id' | 'timestamp' | 'session_id'>): Promise<ClientMessage | null> {
+    if (!this.isInitialized || !this.ws) {
+      console.warn('⚠️ WebSocket not initialized - message queued');
+      const fullMessage: ClientMessage = {
+        ...message,
+        message_id: this.generateMessageId(),
+        timestamp: new Date().toISOString(),
+        session_id: this.sessionId || '',
+      } as ClientMessage;
+      this.messageQueue.push(fullMessage);
+      return fullMessage;
+    }
+
     const fullMessage: ClientMessage = {
       ...message,
       message_id: this.generateMessageId(),
@@ -245,13 +278,20 @@ export class DecksterClient extends EventEmitter {
     } as ClientMessage;
 
     if (!this.connected || this.ws?.readyState !== WebSocket.OPEN) {
+      console.warn('⚠️ WebSocket not connected - message queued');
       this.messageQueue.push(fullMessage);
       return fullMessage;
     }
 
-    this.ws.send(JSON.stringify(fullMessage));
-    console.log('📤 Sent:', fullMessage);
-    return fullMessage;
+    try {
+      this.ws.send(JSON.stringify(fullMessage));
+      console.log('📤 Sent:', fullMessage);
+      return fullMessage;
+    } catch (error) {
+      console.error('❌ Failed to send message:', error);
+      this.messageQueue.push(fullMessage);
+      return null;
+    }
   }
 
   async sendWithResponse<T = any>(
@@ -286,6 +326,7 @@ export class DecksterClient extends EventEmitter {
   }
 
   disconnect(): void {
+    console.log('🔌 Manually disconnecting WebSocket...');
     this.stopHeartbeat();
     
     if (this.reconnectTimer) {
@@ -299,6 +340,8 @@ export class DecksterClient extends EventEmitter {
     }
 
     this.connected = false;
+    this.isInitialized = false;
+    this.isConnecting = false;
     this.pendingMessages.forEach(pending => {
       clearTimeout(pending.timer);
       pending.reject(new Error('Client disconnected'));
@@ -314,6 +357,21 @@ export class DecksterClient extends EventEmitter {
   // Getters
   isConnected(): boolean {
     return this.connected;
+  }
+
+  getIsInitialized(): boolean {
+    return this.isInitialized;
+  }
+
+  getIsConnecting(): boolean {
+    return this.isConnecting;
+  }
+
+  getConnectionState(): 'disconnected' | 'connecting' | 'connected' | 'error' {
+    if (this.isConnecting) return 'connecting';
+    if (this.connected && this.isInitialized) return 'connected';
+    if (this.ws?.readyState === WebSocket.CLOSED && this.reconnectAttempts > 0) return 'error';
+    return 'disconnected';
   }
 
   getSessionId(): string | null {

@@ -7,7 +7,8 @@ import { useDecksterWebSocket } from "@/hooks/use-deckster-websocket"
 import { usePresentation, PresentationProvider } from "@/contexts/presentation-context"
 import { presentationActions } from "@/lib/presentation-reducer"
 import { WebSocketErrorBoundary } from "@/components/error-boundary"
-import { ConnectionError, ConnectionStatusIndicator } from "@/components/connection-error"
+import { ConnectionError } from "@/components/connection-error"
+import { ConnectionStatusIndicator } from "@/components/connection-debug"
 import { ConversationFlow, ConversationFlowCompact } from "@/components/conversation-flow"
 import { WaitingIndicator } from "@/components/waiting-indicator"
 import { Button } from "@/components/ui/button"
@@ -63,6 +64,7 @@ function BuilderContent() {
   const {
     connected,
     authenticated,
+    connectionState,
     error: wsError,
     messages: directorMessages,
     slides: slideData,
@@ -265,7 +267,10 @@ function BuilderContent() {
             </div>
 
             <div className="flex items-center gap-4">
-              <ConnectionStatusIndicator />
+              <ConnectionStatusIndicator 
+                connectionState={connectionState}
+                isReady={isReady}
+              />
               <ConversationFlowCompact />
               <Button
                 variant="ghost"
@@ -366,10 +371,12 @@ function BuilderContent() {
                 onChange={setInputMessage}
                 onSend={handleSendMessage}
                 onFileAttach={handleFileAttach}
-                isLoading={state.isProcessing || !isReady}
+                isLoading={state.isProcessing}
                 internetSearchEnabled={internetSearchEnabled}
                 onToggleInternetSearch={() => setInternetSearchEnabled(!internetSearchEnabled)}
                 placeholder={!isReady ? "Connecting to AI agents..." : "Ask the AI agents anything..."}
+                connectionState={connectionState}
+                isReady={isReady}
               />
             </div>
           </div>

@@ -175,22 +175,30 @@ export function ConnectionDebug({ connectionState, className }: ConnectionDebugP
 }
 
 // Enhanced Connection Status Indicator for the header
-export function ConnectionStatusIndicator({ className }: { className?: string }) {
+export function ConnectionStatusIndicator({ 
+  className,
+  connectionState,
+  isReady 
+}: { 
+  className?: string
+  connectionState?: string
+  isReady?: boolean
+}) {
   const [showDebug, setShowDebug] = useState(false)
   
-  // This is a simplified version - in a real app you'd use the actual connection state
-  const status = 'connecting' // You can get this from your WebSocket hook
+  // Use provided state or default to disconnected
+  const status = connectionState || 'disconnected'
   
   const getStatusColor = () => {
     switch (status) {
-      case 'authenticated':
       case 'connected':
-        return 'bg-green-500'
+        return isReady ? 'bg-green-500' : 'bg-yellow-500'
       case 'connecting':
         return 'bg-yellow-500 animate-pulse'
       case 'error':
-      case 'disconnected':
         return 'bg-red-500'
+      case 'disconnected':
+        return 'bg-gray-500'
       default:
         return 'bg-gray-500'
     }
@@ -198,17 +206,30 @@ export function ConnectionStatusIndicator({ className }: { className?: string })
 
   const getStatusText = () => {
     switch (status) {
-      case 'authenticated':
       case 'connected':
-        return 'Connected'
+        return isReady ? 'Ready' : 'Authenticating...'
       case 'connecting':
         return 'Connecting...'
       case 'error':
-        return 'Error'
+        return 'Connection Failed'
       case 'disconnected':
         return 'Disconnected'
       default:
         return 'Unknown'
+    }
+  }
+
+  const getDetailedStatus = () => {
+    if (status === 'connected' && isReady) {
+      return 'AI agents are ready to help you create presentations'
+    } else if (status === 'connected') {
+      return 'Connected, authenticating with AI agents...'
+    } else if (status === 'connecting') {
+      return 'Establishing connection to AI agents...'
+    } else if (status === 'error') {
+      return 'Unable to connect to AI agents. Click to retry.'
+    } else {
+      return 'Not connected to AI agents'
     }
   }
 
@@ -217,7 +238,7 @@ export function ConnectionStatusIndicator({ className }: { className?: string })
       <button
         onClick={() => setShowDebug(!showDebug)}
         className="flex items-center gap-2 p-1 rounded hover:bg-gray-100 transition-colors"
-        title={`Connection: ${getStatusText()}`}
+        title={getDetailedStatus()}
       >
         <div className={cn("w-2 h-2 rounded-full", getStatusColor())} />
         <span className="text-xs text-gray-600 hidden sm:inline">
@@ -227,7 +248,12 @@ export function ConnectionStatusIndicator({ className }: { className?: string })
 
       {showDebug && (
         <div className="absolute top-full right-0 mt-2 z-50">
-          <ConnectionDebug connectionState={{ status }} />
+          <ConnectionDebug connectionState={{ 
+            status, 
+            isReady,
+            initialized: status !== 'disconnected',
+            connecting: status === 'connecting'
+          }} />
         </div>
       )}
     </div>

@@ -21,6 +21,9 @@ export interface UseDecksterWebSocketOptions {
 export interface DecksterWebSocketState {
   connected: boolean;
   authenticated: boolean;
+  connecting: boolean;
+  initialized: boolean;
+  connectionState: 'disconnected' | 'connecting' | 'connected' | 'error';
   sessionId: string | null;
   error: Error | null;
   messages: DirectorMessage[];
@@ -39,6 +42,9 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
   const [state, setState] = useState<DecksterWebSocketState>({
     connected: false,
     authenticated: false,
+    connecting: false,
+    initialized: false,
+    connectionState: 'disconnected',
     sessionId: null,
     error: null,
     messages: [],
@@ -49,6 +55,7 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
 
   const clientRef = useRef<DecksterClient | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const initializationRef = useRef<boolean>(false);
 
   // Initialize WebSocket client
   useEffect(() => {
@@ -56,26 +63,59 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
       return;
     }
 
+    // Prevent multiple initialization attempts
+    if (initializationRef.current || clientRef.current?.getIsInitialized()) {
+      console.log('🔄 WebSocket already initialized, skipping...');
+      return;
+    }
+
     const initializeClient = async () => {
       try {
+        initializationRef.current = true;
+        
+        setState(prev => ({ 
+          ...prev, 
+          connecting: true, 
+          connectionState: 'connecting',
+          error: null 
+        }));
+
         const token = await getToken();
         if (!token) {
-          setState(prev => ({ ...prev, error: new Error('No authentication token available') }));
+          setState(prev => ({ 
+            ...prev, 
+            error: new Error('No authentication token available'),
+            connecting: false,
+            connectionState: 'error'
+          }));
+          initializationRef.current = false;
           return;
         }
 
-        const client = new DecksterClient({
-          url: process.env.NEXT_PUBLIC_WS_URL,
-          reconnectDelay: 1000,
-          maxReconnectDelay: 30000,
-          maxReconnectAttempts: options.reconnectOnError ? 10 : 3
-        });
+        // Only create new client if we don't have one
+        if (!clientRef.current) {
+          const client = new DecksterClient({
+            url: process.env.NEXT_PUBLIC_WS_URL,
+            reconnectDelay: 1000,
+            maxReconnectDelay: 30000,
+            maxReconnectAttempts: options.reconnectOnError ? 10 : 3
+          });
 
-        clientRef.current = client;
+          clientRef.current = client;
+        }
+
+        const client = clientRef.current;
 
         // Setup event handlers
         client.on('connected', () => {
-          setState(prev => ({ ...prev, connected: true, error: null }));
+          setState(prev => ({ 
+            ...prev, 
+            connected: true, 
+            connecting: false,
+            initialized: true,
+            connectionState: 'connected',
+            error: null 
+          }));
         });
 
         client.on('authenticated', (message) => {
@@ -87,11 +127,25 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
         });
 
         client.on('disconnected', () => {
-          setState(prev => ({ ...prev, connected: false, authenticated: false }));
+          setState(prev => ({ 
+            ...prev, 
+            connected: false, 
+            authenticated: false,
+            connecting: false,
+            initialized: false,
+            connectionState: 'disconnected'
+          }));
+          initializationRef.current = false;
         });
 
         client.on('error', (error) => {
-          setState(prev => ({ ...prev, error }));
+          setState(prev => ({ 
+            ...prev, 
+            error,
+            connecting: false,
+            connectionState: 'error'
+          }));
+          initializationRef.current = false;
           if (options.onError) {
             options.onError(error);
           }
@@ -136,8 +190,11 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
       } catch (error) {
         setState(prev => ({ 
           ...prev, 
-          error: error instanceof Error ? error : new Error('Failed to connect') 
+          error: error instanceof Error ? error : new Error('Failed to connect'),
+          connecting: false,
+          connectionState: 'error'
         }));
+        initializationRef.current = false;
       }
     };
 
@@ -153,6 +210,7 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
         clientRef.current.disconnect();
         clientRef.current = null;
       }
+      initializationRef.current = false;
     };
   }, [isAuthenticated, options.autoConnect, options.reconnectOnError, options.onError, getToken]);
 
@@ -166,12 +224,16 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
       actions?: FrontendAction[];
     }
   ): Promise<void> => {
-    if (!clientRef.current || !state.connected) {
-      throw new Error('WebSocket not connected');
+    if (!clientRef.current || !state.initialized || !state.connected) {
+      const statusMsg = !clientRef.current ? 'WebSocket not initialized' : 
+                       !state.initialized ? 'WebSocket not ready' : 
+                       'WebSocket not connected';
+      console.warn(`⚠️ Cannot send message: ${statusMsg}`);
+      throw new Error(statusMsg);
     }
 
     try {
-      await clientRef.current.send({
+      const result = await clientRef.current.send({
         type: 'user_input',
         data: {
           text,
@@ -181,11 +243,15 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
           frontend_actions: options?.actions || []
         }
       });
+      
+      if (!result) {
+        throw new Error('Failed to send message - client returned null');
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
       throw error;
     }
-  }, [state.connected]);
+  }, [state.connected, state.initialized]);
 
   // Upload file function
   const uploadFile = useCallback(async (file: File): Promise<Attachment> => {
@@ -342,6 +408,6 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
     clearMessages,
     
     // Utility
-    isReady: state.connected && state.authenticated
+    isReady: state.connected && state.authenticated && state.initialized
   };
 }
