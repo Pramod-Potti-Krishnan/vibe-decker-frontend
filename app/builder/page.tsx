@@ -49,6 +49,7 @@ import { SlideDisplay } from "@/components/slide-display"
 import { ChatMessage } from "@/components/chat-message"
 import { ProgressTracker } from "@/components/progress-tracker"
 import { AgentStatus as AgentStatusType } from "@/lib/types/director-messages"
+import { OnboardingModal } from "@/components/onboarding-modal"
 
 // Force dynamic rendering to prevent build-time errors
 export const dynamic = 'force-dynamic'
@@ -90,6 +91,19 @@ function BuilderContent() {
   const [dragStartX, setDragStartX] = useState(0)
   const [dragStartSplit, setDragStartSplit] = useState(50)
   const [isNavPinned, setIsNavPinned] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  // Check if user is new and should see onboarding
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const isNewUser = urlParams.get('new') === 'true'
+    
+    if (isNewUser && user) {
+      setShowOnboarding(true)
+      // Remove the query parameter
+      window.history.replaceState({}, '', '/builder')
+    }
+  }, [user])
 
   // Process director messages into presentation state
   useEffect(() => {
@@ -479,6 +493,7 @@ function BuilderContent() {
           onClose={() => setShowVersions(false)}
         />
       )}
+      <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
 
       {/* Drag handler for resize */}
       {isDragging && (

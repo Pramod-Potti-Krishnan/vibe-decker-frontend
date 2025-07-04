@@ -1,12 +1,35 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowRight, Sparkles, Users, Zap, Check } from "lucide-react"
+import { signIn } from "next-auth/react"
 import Link from "next/link"
 
 export default function LandingPage() {
+  const [staySignedIn, setStaySignedIn] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSignIn = async () => {
+    try {
+      setIsLoading(true)
+      // Store the stay signed in preference
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('staySignedIn', staySignedIn.toString())
+      }
+      
+      await signIn("google", {
+        callbackUrl: "/builder",
+        redirect: true,
+      })
+    } catch (error) {
+      console.error("Sign in error:", error)
+      setIsLoading(false)
+    }
+  }
 
   const features = [
     {
@@ -87,12 +110,19 @@ export default function LandingPage() {
             <span className="text-xl font-bold">deckster.xyz</span>
           </div>
           <div className="flex items-center space-x-4">
-            <Link href="/auth/signin">
-              <Button variant="ghost">Sign In</Button>
-            </Link>
-            <Link href="/auth/signup">
-              <Button>Get Started</Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              onClick={handleSignIn}
+              disabled={isLoading}
+            >
+              {isLoading ? "Signing in..." : "Sign In"}
+            </Button>
+            <Button 
+              onClick={handleSignIn}
+              disabled={isLoading}
+            >
+              {isLoading ? "Loading..." : "Get Started"}
+            </Button>
           </div>
         </div>
       </header>
@@ -111,20 +141,35 @@ export default function LandingPage() {
             Scripter writes, and the Graphic Artist designs - all while you guide the process through natural
             conversation.
           </p>
-          <div className="flex items-center justify-center space-x-4">
-            <Link href="/auth/signup">
+          <div className="space-y-4">
+            <div className="flex items-center justify-center space-x-4">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                onClick={handleSignIn}
+                disabled={isLoading}
               >
-                Start Building <ArrowRight className="ml-2 h-4 w-4" />
+                {isLoading ? "Loading..." : "Start Building"} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </Link>
-            <Link href="/demo">
-              <Button size="lg" variant="outline">
-                Watch Demo
-              </Button>
-            </Link>
+              <Link href="/demo">
+                <Button size="lg" variant="outline">
+                  Watch Demo
+                </Button>
+              </Link>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <Checkbox 
+                id="stay-signed-in" 
+                checked={staySignedIn}
+                onCheckedChange={(checked) => setStaySignedIn(checked as boolean)}
+              />
+              <label 
+                htmlFor="stay-signed-in" 
+                className="text-sm text-slate-600 cursor-pointer"
+              >
+                Stay signed in for 30 days
+              </label>
+            </div>
           </div>
         </div>
       </section>
