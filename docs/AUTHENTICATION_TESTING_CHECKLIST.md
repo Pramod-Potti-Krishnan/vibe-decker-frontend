@@ -16,24 +16,29 @@ This checklist helps verify that the authentication and WebSocket connection are
 
 ## Authentication Testing
 
-### 1. Token Acquisition via Proxy
+### 1. Demo Endpoint Test (Direct)
 - [ ] Navigate to `/test-connection`
 - [ ] Click "Run Connection Test"
-- [ ] Verify "Get Authentication Token" step succeeds
-- [ ] Check console for "✅ Got authentication token via proxy" message
+- [ ] Verify "Test Demo Endpoint" step succeeds
+- [ ] Check if backend now supports CORS directly
 - [ ] Confirm no CORS errors in console
 
-### 2. Fallback Authentication (Dev Mode)
-- [ ] Set `NEXT_PUBLIC_DEV_MODE=true` in environment
-- [ ] Clear browser local storage
-- [ ] Refresh page and run connection test
-- [ ] Verify mock token generation works
-- [ ] Check console for "🔐 Using mock token for development" message
+### 2. Token Acquisition via Proxy
+- [ ] Verify "Get Token via Proxy" step succeeds
+- [ ] Check console for "✅ Successfully got token from /api/auth/demo endpoint" message
+- [ ] Confirm fallback chain works if needed
 
-### 3. Token Persistence
+### 3. Browser Console Test
+- [ ] Copy the test code from `/test-connection` page
+- [ ] Paste into browser console
+- [ ] Verify token is obtained directly
+- [ ] Confirm WebSocket connects successfully
+- [ ] Check for test message exchange
+
+### 4. Token Persistence
 - [ ] After successful authentication, refresh the page
 - [ ] Verify token is restored from localStorage
-- [ ] Check token expiry time is correctly displayed
+- [ ] Check token expiry time is correctly displayed (24 hours for demo tokens)
 - [ ] Test "Invalidate Token" button forces refresh
 
 ## WebSocket Connection Testing

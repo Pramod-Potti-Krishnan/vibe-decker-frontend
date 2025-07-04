@@ -7,18 +7,59 @@ export async function POST(request: NextRequest) {
     // Get backend URL from environment or use default
     const backendUrl = process.env.BACKEND_API_URL || 'https://deckster-production.up.railway.app';
     
-    // Make server-side request to backend (bypasses CORS)
-    const response = await fetch(`${backendUrl}/api/dev/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: body.user_id || 'test_user'
-      }),
-    });
+    // First try the new production-ready demo endpoint
+    try {
+      const response = await fetch(`${backendUrl}/api/auth/demo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: body.user_id || `test_user_${Date.now()}`
+        }),
+      });
 
-    if (!response.ok) {
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Successfully got token from /api/auth/demo endpoint');
+        
+        // Return the token data in consistent format
+        return NextResponse.json({
+          access_token: data.access_token,
+          token_type: data.token_type || 'bearer',
+          expires_in: data.expires_in || 86400,
+          user_id: data.user_id,
+          source: 'demo_endpoint'
+        });
+      }
+    } catch (demoError) {
+      console.log('Demo endpoint failed, trying dev endpoint...');
+    }
+    
+    // Fallback to dev endpoint (with query parameter format)
+    try {
+      const userId = body.user_id || 'test_user';
+      const response = await fetch(`${backendUrl}/api/dev/token?user_id=${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Successfully got token from /api/dev/token endpoint');
+        
+        // Return the token data
+        return NextResponse.json({
+          access_token: data.access_token,
+          token_type: data.token_type || 'bearer',
+          expires_in: data.expires_in || 3600,
+          user_id: userId,
+          source: 'dev_endpoint'
+        });
+      }
+
       const errorText = await response.text();
       console.error('Backend token request failed:', response.status, errorText);
       
@@ -26,16 +67,9 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to get authentication token', details: errorText },
         { status: response.status }
       );
+    } catch (devError) {
+      throw devError;
     }
-
-    const data = await response.json();
-    
-    // Return the token data
-    return NextResponse.json({
-      access_token: data.access_token,
-      token_type: data.token_type || 'Bearer',
-      expires_in: data.expires_in || 3600,
-    });
     
   } catch (error) {
     console.error('Proxy token error:', error);

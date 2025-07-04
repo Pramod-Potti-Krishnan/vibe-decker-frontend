@@ -73,11 +73,12 @@ export class TokenManager {
         }
       }
       
-      // Fallback to direct backend connection (may fail due to CORS)
+      // Try direct backend connection - first with new demo endpoint
       const httpUrl = process.env.NEXT_PUBLIC_API_HTTP_URL || 'https://deckster-production.up.railway.app';
       
+      // Try new demo endpoint first
       try {
-        const response = await fetch(`${httpUrl}/api/dev/token`, {
+        const response = await fetch(`${httpUrl}/api/auth/demo`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -90,9 +91,30 @@ export class TokenManager {
         if (response.ok) {
           const data = await response.json();
           this.token = data.access_token;
-          // Set expiry to 1 hour from now (or use expires_in if provided)
+          // Demo endpoint returns 24-hour tokens
+          this.expiryTime = Date.now() + ((data.expires_in || 86400) * 1000);
+          console.log('✅ Got authentication token from demo endpoint');
+          return data.access_token;
+        }
+      } catch (error) {
+        console.log('Demo endpoint failed (likely CORS), trying dev endpoint...');
+      }
+      
+      // Fallback to dev endpoint with query parameter
+      try {
+        const userId = this.getUserId();
+        const response = await fetch(`${httpUrl}/api/dev/token?user_id=${userId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          this.token = data.access_token;
           this.expiryTime = Date.now() + ((data.expires_in || 3600) * 1000);
-          console.log('✅ Got authentication token from backend directly');
+          console.log('✅ Got authentication token from dev endpoint');
           return data.access_token;
         }
       } catch (error) {

@@ -21,10 +21,11 @@ interface TestStep {
 export default function TestConnectionPage() {
   const [steps, setSteps] = useState<TestStep[]>([
     { id: 'env', name: 'Check Environment Configuration', status: 'pending' },
-    { id: 'token', name: 'Get Authentication Token', status: 'pending' },
+    { id: 'demo-endpoint', name: 'Test Demo Endpoint (/api/auth/demo)', status: 'pending' },
+    { id: 'proxy-token', name: 'Get Token via Proxy', status: 'pending' },
     { id: 'ws-connect', name: 'Connect to WebSocket', status: 'pending' },
     { id: 'ws-auth', name: 'Authenticate WebSocket', status: 'pending' },
-    { id: 'ws-ping', name: 'Send Ping Message', status: 'pending' },
+    { id: 'ws-ping', name: 'Send Test Message', status: 'pending' },
   ])
   const [isRunning, setIsRunning] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
@@ -64,13 +65,48 @@ export default function TestConnectionPage() {
       addLog(`WebSocket: ${envConfig.wsUrl}`, 'success')
       addLog(`Using Proxy: ${envConfig.useProxy}`, 'success')
       
-      // Step 2: Get Token
-      updateStep('token', 'running')
-      addLog('Attempting to get authentication token...')
+      // Step 2: Test Demo Endpoint Directly
+      updateStep('demo-endpoint', 'running')
+      addLog('Testing direct connection to demo endpoint...')
+      
+      try {
+        const demoResponse = await fetch('https://deckster-production.up.railway.app/api/auth/demo', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: 'test_' + Date.now()
+          })
+        })
+        
+        if (demoResponse.ok) {
+          const demoData = await demoResponse.json()
+          updateStep('demo-endpoint', 'success', 'Demo endpoint accessible (no CORS!)', {
+            tokenReceived: !!demoData.access_token,
+            expiresIn: demoData.expires_in
+          })
+          addLog('✅ Backend now supports CORS!', 'success')
+        } else {
+          updateStep('demo-endpoint', 'error', `Failed with status ${demoResponse.status}`)
+          addLog('Demo endpoint returned error (but CORS headers present)', 'error')
+        }
+      } catch (error: any) {
+        if (error.message.includes('CORS')) {
+          updateStep('demo-endpoint', 'error', 'Blocked by CORS')
+          addLog('Still blocked by CORS, using proxy...', 'info')
+        } else {
+          updateStep('demo-endpoint', 'error', error.message)
+        }
+      }
+      
+      // Step 3: Get Token via Proxy
+      updateStep('proxy-token', 'running')
+      addLog('Getting authentication token via proxy...')
       
       try {
         const token = await tokenManager.getValidToken()
-        updateStep('token', 'success', 'Token obtained successfully', { 
+        updateStep('proxy-token', 'success', 'Token obtained successfully', { 
           tokenLength: token.length,
           expiresAt: new Date(tokenManager.getExpiryTime() || 0).toLocaleString()
         })
@@ -123,7 +159,7 @@ export default function TestConnectionPage() {
         await client.connect(token)
         
       } catch (tokenError: any) {
-        updateStep('token', 'error', tokenError.message)
+        updateStep('proxy-token', 'error', tokenError.message)
         addLog(`Failed to get token: ${tokenError.message}`, 'error')
         
         // Show auth method that failed
@@ -272,7 +308,7 @@ export default function TestConnectionPage() {
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
@@ -300,6 +336,63 @@ export default function TestConnectionPage() {
               onClick={() => window.location.reload()}
             >
               Reload Page
+            </Button>
+          </div>
+          
+          <Separator />
+          
+          <div>
+            <h4 className="font-medium mb-2">Browser Console Test (Copy & Paste)</h4>
+            <ScrollArea className="h-48 w-full rounded border bg-gray-50 p-3">
+              <pre className="text-xs font-mono whitespace-pre-wrap">{`// Complete test in browser console
+(async () => {
+  // 1. Get token
+  const tokenRes = await fetch('https://deckster-production.up.railway.app/api/auth/demo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: 'browser_test' })
+  });
+  const { access_token } = await tokenRes.json();
+  console.log('✅ Got token:', access_token);
+ 
+  // 2. Connect WebSocket
+  const ws = new WebSocket(\`wss://deckster-production.up.railway.app/ws?token=\${access_token}\`);
+ 
+  ws.onopen = () => console.log('✅ WebSocket connected!');
+  ws.onmessage = (e) => console.log('📨 Message:', JSON.parse(e.data));
+  ws.onerror = (e) => console.error('❌ Error:', e);
+  ws.onclose = (e) => console.log('🔌 Closed:', e.code, e.reason);
+ 
+  // 3. Send test message after connection
+  ws.onopen = () => {
+    ws.send(JSON.stringify({
+      message_id: 'test_' + Date.now(),
+      timestamp: new Date().toISOString(),
+      session_id: null,
+      type: 'user_input',
+      data: {
+        text: 'Create a simple 5-slide pitch deck',
+        response_to: null,
+        attachments: [],
+        ui_references: [],
+        frontend_actions: []
+      }
+    }));
+  };
+})();`}</pre>
+            </ScrollArea>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2"
+              onClick={() => {
+                const code = document.querySelector('pre')?.textContent || ''
+                navigator.clipboard.writeText(code)
+                addLog('Test code copied to clipboard', 'success')
+              }}
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Copy Test Code
             </Button>
           </div>
         </CardContent>
