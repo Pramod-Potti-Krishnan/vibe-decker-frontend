@@ -40,8 +40,28 @@ export interface AuthResponseMessage {
   reason?: string;
 }
 
+// Connection status message
+export interface ConnectionMessage extends BaseMessage {
+  type: 'connection';
+  status: 'connected' | 'disconnected';
+  user_id: string;
+  metadata?: {
+    server_time: string;
+    version: string;
+  };
+}
+
+// System messages (errors, warnings, info)
+export interface SystemMessage extends BaseMessage {
+  type: 'system';
+  level: 'error' | 'warning' | 'info';
+  code: string;
+  message: string;
+  details?: any;
+}
+
 export interface DirectorMessage extends BaseMessage {
-  type: 'director_message';
+  type: 'director';  // Changed from 'director_message' to match backend
   source: 'director_inbound' | 'director_outbound';
   data: {
     slide_data?: SlideData;
@@ -163,7 +183,15 @@ export function isUserInputMessage(msg: any): msg is UserInputMessage {
 }
 
 export function isDirectorMessage(msg: any): msg is DirectorMessage {
-  return msg?.type === 'director_message';
+  return msg?.type === 'director';  // Fixed to match backend
+}
+
+export function isConnectionMessage(msg: any): msg is ConnectionMessage {
+  return msg?.type === 'connection';
+}
+
+export function isSystemMessage(msg: any): msg is SystemMessage {
+  return msg?.type === 'system';
 }
 
 export function isAuthResponseMessage(msg: any): msg is AuthResponseMessage {
@@ -182,6 +210,7 @@ export type WebSocketEventType =
   | 'error'
   | 'message'
   | 'director_message'
+  | 'system_message'
   | 'chat_question'
   | 'chat_summary'
   | 'chat_progress'
@@ -199,5 +228,7 @@ export type ClientMessage =
 // Server Message Types
 export type ServerMessage = 
   | DirectorMessage
+  | ConnectionMessage
+  | SystemMessage
   | AuthResponseMessage
   | ErrorMessage;

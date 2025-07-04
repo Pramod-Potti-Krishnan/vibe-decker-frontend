@@ -3,10 +3,14 @@ import {
   ClientMessage, 
   ServerMessage, 
   DirectorMessage,
+  ConnectionMessage,
+  SystemMessage,
   AuthResponseMessage,
   ErrorMessage,
   WebSocketEventType,
   isDirectorMessage,
+  isConnectionMessage,
+  isSystemMessage,
   isAuthResponseMessage,
   isErrorMessage
 } from './types/websocket-types';
@@ -115,12 +119,30 @@ export class DecksterClient extends EventEmitter {
   }
 
   private handleMessage(message: any): void {
-    // Handle connection success message
-    if (message.type === 'connection' && message.status === 'connected') {
-      this.sessionId = message.session_id;
-      console.log('✅ Session established:', this.sessionId);
-      this.emit('authenticated', { session_id: message.session_id });
-      this.processMessageQueue();
+    // CRITICAL: Check message type first before accessing type-specific fields
+    if (!message || !message.type) {
+      console.error('Invalid message format:', message);
+      return;
+    }
+
+    // Handle connection messages
+    if (isConnectionMessage(message)) {
+      if (message.status === 'connected') {
+        this.sessionId = message.session_id;
+        console.log('✅ Session established:', this.sessionId);
+        this.emit('authenticated', { session_id: message.session_id });
+        this.processMessageQueue();
+      }
+      return;
+    }
+
+    // Handle system messages (errors, warnings, info)
+    if (isSystemMessage(message)) {
+      console.log(`System ${message.level}: ${message.message}`);
+      if (message.level === 'error') {
+        this.emit('error', new Error(message.message));
+      }
+      this.emit('system_message', message);
       return;
     }
 
@@ -147,13 +169,18 @@ export class DecksterClient extends EventEmitter {
     // Handle director messages
     if (isDirectorMessage(message)) {
       this.handleDirectorMessage(message);
+      return;
     }
 
-    // Handle error messages
+    // Handle error messages (legacy format)
     if (isErrorMessage(message)) {
       this.emit('error', new Error(message.error.message));
+      return;
     }
 
+    // Unknown message type
+    console.warn('Unknown message type:', message.type, message);
+    
     // Emit raw message event
     this.emit('message', message);
   }
@@ -172,15 +199,21 @@ export class DecksterClient extends EventEmitter {
   private handleDirectorMessage(message: DirectorMessage): void {
     this.emit('director_message', message);
 
+    // IMPORTANT: data field may be undefined or missing chat_data/slide_data
+    if (!message.data) {
+      console.warn('Director message missing data field:', message);
+      return;
+    }
+
     const { data } = message;
 
-    // Emit chat-specific events
+    // Emit chat-specific events (chat_data is optional!)
     if (data.chat_data) {
       const chatType = data.chat_data.type;
       this.emit(`chat_${chatType}` as WebSocketEventType, message);
     }
 
-    // Emit slide update events
+    // Emit slide update events (slide_data is optional!)
     if (data.slide_data?.slides && data.slide_data.slides.length > 0) {
       this.emit('slides_update', message);
     }

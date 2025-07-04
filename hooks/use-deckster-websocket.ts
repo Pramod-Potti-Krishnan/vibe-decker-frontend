@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { DecksterClient } from '@/lib/websocket-client';
 import { 
   DirectorMessage, 
+  SystemMessage,
   UserInputMessage,
   ChatData,
   SlideData,
@@ -158,23 +159,38 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
               messages: [...prev.messages, message] 
             };
 
-            // Update slides if present
-            if (message.data.slide_data) {
-              newState.slides = message.data.slide_data;
-            }
+            // Check if data exists before accessing its properties
+            if (message.data) {
+              // Update slides if present
+              if (message.data.slide_data) {
+                newState.slides = message.data.slide_data;
+              }
 
-            // Update chat messages if present
-            if (message.data.chat_data) {
-              newState.chatMessages = [...prev.chatMessages, message.data.chat_data];
-              
-              // Update progress if present
-              if (message.data.chat_data.progress) {
-                newState.progress = message.data.chat_data.progress;
+              // Update chat messages if present
+              if (message.data.chat_data) {
+                newState.chatMessages = [...prev.chatMessages, message.data.chat_data];
+                
+                // Update progress if present
+                if (message.data.chat_data.progress) {
+                  newState.progress = message.data.chat_data.progress;
+                }
               }
             }
 
             return newState;
           });
+        });
+
+        client.on('system_message', (message: any) => {
+          // Handle system messages (especially errors)
+          if (message.level === 'error') {
+            setState(prev => ({ 
+              ...prev, 
+              error: new Error(`System Error: ${message.message} (${message.code})`),
+              connectionState: 'error'
+            }));
+          }
+          console.log(`[System ${message.level}] ${message.message}`);
         });
 
         client.on('auth_failed', () => {
