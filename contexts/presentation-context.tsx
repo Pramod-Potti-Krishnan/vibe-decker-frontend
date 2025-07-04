@@ -128,7 +128,7 @@ function presentationReducer(
     case 'UPDATE_SLIDE':
       return {
         ...state,
-        slides: state.slides.map(slide =>
+        slides: (state.slides || []).map(slide =>
           slide.slide_id === action.payload.slideId
             ? { ...slide, ...action.payload.updates }
             : slide
@@ -252,7 +252,7 @@ export function usePresentationSlides() {
 
 export function useCurrentSlide() {
   const { state } = usePresentation();
-  return state.slides[state.currentSlideIndex] || null;
+  return (state.slides && Array.isArray(state.slides) && state.slides[state.currentSlideIndex]) || null;
 }
 
 export function usePresentationPhase() {

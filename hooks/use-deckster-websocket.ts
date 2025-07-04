@@ -169,11 +169,16 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
 
             // Round 14 fix: chat_data and slide_data are directly on the message, not wrapped in 'data'
             // Round 15 fix: Extract slides array from slide_data object
+            // Round 17 fix: Ensure slides is always an array, handle chat-only messages
             if (message.slide_data?.slides) {
               console.log('[Round 16 Debug] message.slide_data:', message.slide_data);
               console.log('[Round 16 Debug] message.slide_data.slides:', message.slide_data.slides);
               console.log('[Round 16 Debug] Is message.slide_data.slides an array?', Array.isArray(message.slide_data.slides));
-              newState.slides = message.slide_data.slides;
+              newState.slides = message.slide_data;
+            } else {
+              // Chat-only message (analysis phase) - preserve existing slides or initialize as null
+              console.log('[Round 17 Debug] No slide_data, keeping existing slides');
+              newState.slides = prev.slides; // Keep existing SlideData or null
             }
 
             // Update chat messages if present

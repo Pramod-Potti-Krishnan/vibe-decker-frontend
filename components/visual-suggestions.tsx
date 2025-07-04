@@ -41,7 +41,7 @@ export function VisualSuggestions({ suggestions }: VisualSuggestionsProps) {
         Suggested Visuals
       </h3>
       <div className="space-y-3">
-        {suggestions.map((suggestion, index) => {
+        {suggestions && Array.isArray(suggestions) && suggestions.map((suggestion, index) => {
           if (typeof suggestion === 'string') {
             return (
               <div key={index} className="flex items-start space-x-3">

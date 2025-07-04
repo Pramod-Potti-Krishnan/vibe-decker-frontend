@@ -80,7 +80,7 @@ export function SlideDisplay({
 
           {/* Additional Slide Elements (excluding title/content which are now handled above) */}
           <div className="space-y-4">
-            {slide.elements
+            {slide.elements && Array.isArray(slide.elements) && slide.elements
               .filter(element => element.type !== 'title' && element.type !== 'content' && element.type !== 'placeholder')
               .map((element) => (
                 <SlideElement

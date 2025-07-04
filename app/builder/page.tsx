@@ -117,7 +117,7 @@ function BuilderContent() {
 
   // Update slides when slide data changes
   useEffect(() => {
-    if (slideData) {
+    if (slideData && slideData.slides && Array.isArray(slideData.slides)) {
       dispatch({
         type: 'UPDATE_SLIDES',
         payload: {
@@ -211,7 +211,7 @@ function BuilderContent() {
       payload: {
         slideId,
         updates: {
-          elements: state.slides.find(s => s.slide_id === slideId)?.elements?.map(el =>
+          elements: (state.slides || []).find(s => s.slide_id === slideId)?.elements?.map(el =>
             el.id === elementId ? { ...el, ...updates } : el
           )
         }
@@ -406,13 +406,13 @@ function BuilderContent() {
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <span className="text-sm">
-                    Slide {state.currentSlideIndex + 1} of {state.slides.length || 1}
+                    Slide {state.currentSlideIndex + 1} of {(state.slides && Array.isArray(state.slides) ? state.slides.length : 0) || 1}
                   </span>
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => handleSlideChange(Math.min(state.slides.length - 1, state.currentSlideIndex + 1))}
-                    disabled={state.currentSlideIndex >= state.slides.length - 1}
+                    onClick={() => handleSlideChange(Math.min((state.slides && Array.isArray(state.slides) ? state.slides.length : 1) - 1, state.currentSlideIndex + 1))}
+                    disabled={state.currentSlideIndex >= ((state.slides && Array.isArray(state.slides) ? state.slides.length : 1) - 1)}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -434,7 +434,7 @@ function BuilderContent() {
 
             {/* Slide Canvas */}
             <div className="flex-1 p-8 overflow-auto">
-              {state.slides.length > 0 && state.slides[state.currentSlideIndex] ? (
+              {state.slides && Array.isArray(state.slides) && state.slides.length > 0 && state.slides[state.currentSlideIndex] ? (
                 <SlideDisplay
                   slide={state.slides[state.currentSlideIndex]}
                   isSelected={true}
@@ -459,9 +459,6 @@ function BuilderContent() {
             <div className="bg-white border-t p-4">
               <ScrollArea className="w-full">
                 <div className="flex gap-4">
-                  {console.log('[Round 16 Debug] state.slides before map:', state.slides)}
-                  {console.log('[Round 16 Debug] Is state.slides an array?', Array.isArray(state.slides))}
-                  {console.log('[Round 16 Debug] typeof state.slides:', typeof state.slides)}
                   {state.slides && Array.isArray(state.slides) && state.slides.map((slide, index) => (
                     <button
                       key={slide.slide_id}
