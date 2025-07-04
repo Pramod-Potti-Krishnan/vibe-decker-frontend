@@ -10,6 +10,9 @@ export class TokenManager {
   private refreshToken: string | null = null;
   private expiryTime: number | null = null;
   private refreshPromise: Promise<string> | null = null;
+  private refreshAttempts: number = 0;
+  private maxRefreshAttempts: number = 3;
+  private lastError: Error | null = null;
 
   async getValidToken(): Promise<string> {
     // Check if token is still valid (with 5 minute buffer)
@@ -34,12 +37,46 @@ export class TokenManager {
   }
 
   private async refreshAccessToken(): Promise<string> {
+    this.refreshAttempts++;
+    
     try {
-      // First, try to get token from backend dev endpoint
+      // Reset error on new attempt
+      this.lastError = null;
+      // First, try to use the proxy endpoint (bypasses CORS)
+      const useProxy = process.env.NEXT_PUBLIC_USE_PROXY !== 'false';
+      
+      if (useProxy) {
+        try {
+          const response = await fetch('/api/proxy/token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+              user_id: this.getUserId() 
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            this.token = data.access_token;
+            // Set expiry to 1 hour from now (or use expires_in if provided)
+            this.expiryTime = Date.now() + ((data.expires_in || 3600) * 1000);
+            console.log('✅ Got authentication token via proxy');
+            return data.access_token;
+          } else {
+            const error = await response.json();
+            console.error('Proxy token request failed:', error);
+          }
+        } catch (error) {
+          console.log('Proxy endpoint failed, trying direct connection...');
+        }
+      }
+      
+      // Fallback to direct backend connection (may fail due to CORS)
       const httpUrl = process.env.NEXT_PUBLIC_API_HTTP_URL || 'https://deckster-production.up.railway.app';
       
       try {
-        // Try the dev token endpoint first (for development)
         const response = await fetch(`${httpUrl}/api/dev/token`, {
           method: 'POST',
           headers: {
@@ -55,11 +92,11 @@ export class TokenManager {
           this.token = data.access_token;
           // Set expiry to 1 hour from now (or use expires_in if provided)
           this.expiryTime = Date.now() + ((data.expires_in || 3600) * 1000);
-          console.log('✅ Got authentication token from backend');
+          console.log('✅ Got authentication token from backend directly');
           return data.access_token;
         }
       } catch (error) {
-        console.log('Dev token endpoint not available, trying other methods...');
+        console.log('Direct backend connection failed (likely CORS), trying other methods...');
       }
 
       // Fallback to NextAuth session if available
@@ -107,11 +144,47 @@ export class TokenManager {
         return storedToken;
       }
 
+      // Development mode fallback - generate mock token
+      const isDev = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEV_MODE === 'true';
+      if (isDev) {
+        try {
+          const response = await fetch('/api/dev/mock-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+              user_id: this.getUserId() 
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            this.token = data.access_token;
+            this.expiryTime = Date.now() + ((data.expires_in || 3600) * 1000);
+            console.log('🔐 Using mock token for development');
+            return data.access_token;
+          }
+        } catch (error) {
+          console.error('Failed to get mock token:', error);
+        }
+      }
+
       // If all else fails, throw error
-      throw new Error('No authentication token available. Please sign in.');
+      const finalError = new Error('No authentication token available. Please sign in.');
+      this.lastError = finalError;
+      throw finalError;
       
     } catch (error) {
       console.error('Failed to refresh access token:', error);
+      this.lastError = error instanceof Error ? error : new Error('Unknown error');
+      
+      // If we've exceeded max attempts, clear the refresh promise to allow retry
+      if (this.refreshAttempts >= this.maxRefreshAttempts) {
+        this.refreshAttempts = 0;
+        this.refreshPromise = null;
+      }
+      
       throw error;
     }
   }
@@ -150,6 +223,8 @@ export class TokenManager {
     this.token = accessToken;
     this.refreshToken = refreshToken || null;
     this.expiryTime = expiresIn ? Date.now() + (expiresIn * 1000) : Date.now() + 3600000;
+    this.refreshAttempts = 0; // Reset attempts on successful token set
+    this.lastError = null;
     
     // Store in localStorage for persistence
     localStorage.setItem('access_token', accessToken);
@@ -176,6 +251,20 @@ export class TokenManager {
 
   getExpiryTime(): number | null {
     return this.expiryTime;
+  }
+
+  getLastError(): Error | null {
+    return this.lastError;
+  }
+
+  resetRefreshAttempts(): void {
+    this.refreshAttempts = 0;
+    this.refreshPromise = null;
+  }
+
+  // Force a token refresh on next request
+  invalidateToken(): void {
+    this.expiryTime = null;
   }
 }
 
