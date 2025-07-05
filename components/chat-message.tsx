@@ -31,6 +31,12 @@ export function ChatMessage({ message, onAction, onResponse }: ChatMessageProps)
   const [isExpanded, setIsExpanded] = useState(true);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
+  // Round 22 Fix: Add empty content validation
+  if (!message.content?.message || message.content.message.trim() === '') {
+    console.warn('[Round 22] Skipping empty message:', message);
+    return null;  // Don't render empty messages
+  }
+
   const handleTextResponse = () => {
     if (response.trim() && onResponse) {
       onResponse(response, message.content.question_id);
@@ -174,7 +180,8 @@ export function ChatMessage({ message, onAction, onResponse }: ChatMessageProps)
               </div>
             )}
 
-            {/* Text Input for Questions without Options */}
+            {/* Round 22 Fix: Remove embedded input fields from question messages
+                Backend requested questions display as regular messages without inputs
             {message.type === 'question' && !message.content.options && !selectedOption && (
               <div className="mt-3 space-y-2">
                 <Textarea
@@ -191,7 +198,7 @@ export function ChatMessage({ message, onAction, onResponse }: ChatMessageProps)
                   Send Response
                 </Button>
               </div>
-            )}
+            )} */}
 
             {/* Required Badge */}
             {message.type === 'question' && message.content.required && (
