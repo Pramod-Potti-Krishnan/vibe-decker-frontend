@@ -61,6 +61,10 @@ export function ChatMessage({ message, onAction, onResponse }: ChatMessageProps)
         return <Clock className="h-5 w-5 text-yellow-500" />;
       case 'action_required':
         return <AlertCircle className="h-5 w-5 text-orange-500" />;
+      case 'user_input':
+        return <User className="h-5 w-5 text-blue-600" />;
+      case 'info':
+        return <Bot className="h-5 w-5 text-blue-500" />;
       default:
         return <Bot className="h-5 w-5 text-gray-500" />;
     }
@@ -76,6 +80,10 @@ export function ChatMessage({ message, onAction, onResponse }: ChatMessageProps)
         return 'Progress Update';
       case 'action_required':
         return 'Action Required';
+      case 'user_input':
+        return 'You';
+      case 'info':
+        return 'AI Agent';
       default:
         return 'Message';
     }

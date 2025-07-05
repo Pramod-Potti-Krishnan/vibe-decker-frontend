@@ -151,7 +151,7 @@ export interface PresentationMetadata {
 }
 
 export interface ChatData {
-  type: 'question' | 'summary' | 'progress' | 'action_required';
+  type: 'question' | 'summary' | 'progress' | 'action_required' | 'info' | 'user_input';
   content: ChatContent;
   actions?: Action[];
   progress?: ProgressInfo;

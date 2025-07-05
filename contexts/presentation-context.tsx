@@ -106,6 +106,11 @@ function presentationReducer(
       };
 
     case 'ADD_CHAT_MESSAGE':
+      console.log('[Chat Fix Debug] ADD_CHAT_MESSAGE action processed:', {
+        currentChatMessages: state.chatMessages,
+        newMessage: action.payload,
+        totalAfterAdd: state.chatMessages.length + 1
+      });
       return {
         ...state,
         chatMessages: [...state.chatMessages, action.payload]

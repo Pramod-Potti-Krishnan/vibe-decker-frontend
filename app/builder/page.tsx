@@ -50,6 +50,7 @@ import { SlideDisplay } from "@/components/slide-display"
 import { ChatMessage } from "@/components/chat-message"
 import { ProgressTracker } from "@/components/progress-tracker"
 import { AgentStatus as AgentStatusType } from "@/lib/types/director-messages"
+import { ChatData } from "@/lib/types/websocket-types"
 import { OnboardingModal } from "@/components/onboarding-modal"
 
 // Force dynamic rendering to prevent build-time errors
@@ -109,9 +110,33 @@ function BuilderContent() {
 
   // Process director messages into presentation state
   useEffect(() => {
-    directorMessages.forEach(message => {
-      const actions = presentationActions.processDirectorMessage(message)
-      actions.forEach(action => dispatch(action))
+    console.log('[Chat Fix Debug] Director messages processing triggered:', {
+      messageCount: directorMessages.length,
+      messages: directorMessages
+    });
+    
+    directorMessages.forEach((message, index) => {
+      console.log(`[Chat Fix Debug] Processing director message ${index + 1}:`, {
+        messageId: message.message_id,
+        type: message.type,
+        source: message.source,
+        hasChatData: !!message.chat_data,
+        chatData: message.chat_data,
+        hasSlideData: !!message.slide_data
+      });
+      
+      const actions = presentationActions.processDirectorMessage(message);
+      
+      console.log(`[Chat Fix Debug] Generated actions for message ${index + 1}:`, {
+        actionCount: actions.length,
+        actionTypes: actions.map(a => a.type),
+        actions: actions
+      });
+      
+      actions.forEach((action, actionIndex) => {
+        console.log(`[Chat Fix Debug] Dispatching action ${actionIndex + 1}:`, action);
+        dispatch(action);
+      });
     })
   }, [directorMessages, dispatch])
 
@@ -158,9 +183,24 @@ function BuilderContent() {
     }
   }, [state.presentationId, dispatch])
 
+  // Helper function to create user message in ChatData format
+  const createUserMessage = useCallback((text: string): ChatData => ({
+    type: 'user_input',
+    content: {
+      message: text
+    }
+  }), []);
+
   // Handle sending messages
   const handleSendMessage = useCallback(async (message: string) => {
     if (!message.trim() || !isReady) return
+
+    // Phase 1.1 Fix: Add user message to chat UI before sending to backend
+    const userMessage = createUserMessage(message.trim());
+    dispatch({ 
+      type: 'ADD_CHAT_MESSAGE', 
+      payload: userMessage 
+    });
 
     dispatch({ type: 'SET_PROCESSING', payload: true })
     
@@ -176,7 +216,7 @@ function BuilderContent() {
     } finally {
       dispatch({ type: 'SET_PROCESSING', payload: false })
     }
-  }, [isReady, sendMessage, dispatch])
+  }, [isReady, sendMessage, dispatch, createUserMessage])
 
   // Handle file attachments
   const handleFileAttach = useCallback(async (files: File[]) => {
@@ -344,6 +384,14 @@ function BuilderContent() {
             {/* Chat Messages */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4 mb-4">
+                {(() => {
+                  console.log('[Chat Fix Debug] Rendering chat messages:', {
+                    messageCount: state.chatMessages.length,
+                    messages: state.chatMessages,
+                    isProcessing: state.isProcessing
+                  });
+                  return null;
+                })()}
                 {state.chatMessages.map((message, index) => (
                   <ChatMessage 
                     key={index}
