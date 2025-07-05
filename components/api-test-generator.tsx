@@ -376,7 +376,7 @@ export function ApiTestGenerator() {
                 <h4 className="font-semibold mb-4">Slides Preview</h4>
                 <ScrollArea className="h-96">
                   <div className="space-y-4">
-                    {presentation.presentation.slides.map((slide, index) => (
+                    {(presentation.presentation.slides || []).map((slide, index) => (
                       <Card key={index} className="p-4">
                         <div className="flex items-start justify-between mb-2">
                           <h5 className="font-medium">

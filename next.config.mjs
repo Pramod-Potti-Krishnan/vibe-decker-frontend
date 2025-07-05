@@ -14,6 +14,8 @@ const nextConfig = {
   },
   // Add production optimizations
   reactStrictMode: true,
+  // Enable source maps for debugging production issues (Round 18)
+  productionBrowserSourceMaps: true,
   // Headers for security
   async headers() {
     return [

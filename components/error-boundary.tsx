@@ -36,6 +36,26 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('[ErrorBoundary] Caught error:', error, errorInfo)
     
+    // Round 18 Enhanced Error Debugging
+    console.log('[Round 18 Error Debug] Component crash captured:', {
+      error: error.message,
+      componentStack: errorInfo.componentStack,
+      componentName: errorInfo.componentStack?.split('\n')[1]?.trim(), // Extract first component name
+      stackTrace: error.stack,
+      errorType: error.constructor.name,
+      isSlideRelated: error.message.includes('length') || error.message.includes('slides') || error.message.includes('undefined'),
+    });
+    
+    // Check if this might be the sO component issue
+    if (error.message.includes("Cannot read properties of undefined (reading 'length')")) {
+      console.log('[Round 18 sO Debug] POTENTIAL sO COMPONENT FOUND:', {
+        componentStack: errorInfo.componentStack,
+        stackLines: errorInfo.componentStack?.split('\n').slice(0, 5),
+        message: error.message,
+        fileName: error.stack?.split('\n')[1]
+      });
+    }
+    
     // Process error through error handler
     const errorDetails = errorHandler.handleError(error)
     
@@ -167,6 +187,25 @@ function DefaultErrorFallback({ error, errorDetails, retry }: ErrorFallbackProps
 export function WebSocketErrorBoundary({ children }: { children: React.ReactNode }) {
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
     console.error('[WebSocketErrorBoundary] WebSocket error:', error, errorInfo)
+    
+    // Round 18 WebSocket-Specific Error Debugging
+    console.log('[Round 18 WebSocket Debug] WebSocket boundary caught error:', {
+      error: error.message,
+      componentStack: errorInfo.componentStack,
+      isLengthError: error.message.includes("reading 'length'"),
+      isSlidesRelated: error.message.includes('slides') || errorInfo.componentStack?.includes('slide'),
+      stackTrace: error.stack?.split('\n').slice(0, 3),
+    });
+    
+    // Special handling for the sO component
+    if (error.message.includes("Cannot read properties of undefined (reading 'length')")) {
+      console.log('[Round 18 sO Hunt] WebSocket boundary found sO error:', {
+        fullStack: error.stack,
+        componentStack: errorInfo.componentStack,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent
+      });
+    }
   }
 
   return (

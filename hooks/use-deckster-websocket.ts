@@ -176,9 +176,9 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
               console.log('[Round 16 Debug] Is message.slide_data.slides an array?', Array.isArray(message.slide_data.slides));
               newState.slides = message.slide_data;
             } else {
-              // Chat-only message (analysis phase) - preserve existing slides or initialize as null
+              // Chat-only message (analysis phase) - preserve existing slides or default to empty array
               console.log('[Round 17 Debug] No slide_data, keeping existing slides');
-              newState.slides = prev.slides; // Keep existing SlideData or null
+              newState.slides = prev.slides || []; // ROUND 18 FIX: Default to empty array if null
             }
 
             // Update chat messages if present
@@ -195,6 +195,12 @@ export function useDecksterWebSocket(options: UseDecksterWebSocketOptions = {}) 
 
             console.log('[Round 16 Debug] New state.slides:', newState.slides);
             console.log('[Round 16 Debug] Is newState.slides an array?', Array.isArray(newState.slides));
+            
+            // Round 18 Enhanced Debug Logging
+            console.log('[Round 18 Debug] State transition complete:');
+            console.log('  From:', prev.slides, 'type:', typeof prev.slides, 'isArray:', Array.isArray(prev.slides));
+            console.log('  To:', newState.slides, 'type:', typeof newState.slides, 'isArray:', Array.isArray(newState.slides));
+            console.log('  Fix Applied:', prev.slides === null ? 'null→array conversion' : 'normal transition');
             
             return newState;
           });

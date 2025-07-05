@@ -100,7 +100,7 @@ export function VersionHistory({
                           <Clock className="h-3 w-3 text-slate-400" />
                           <span className="text-xs text-slate-500">{formatTimeAgo(version.createdAt)}</span>
                           <Badge variant="outline" className="text-xs">
-                            {version.slides.length} slides
+                            {version.slides?.length || 0} slides
                           </Badge>
                         </div>
                       </div>
@@ -122,7 +122,7 @@ export function VersionHistory({
                       <p className="text-sm text-slate-600">{selectedVersion.description}</p>
                       <div className="flex items-center space-x-4 mt-2 text-xs text-slate-500">
                         <span>Created {selectedVersion.createdAt.toLocaleString()}</span>
-                        <span>{selectedVersion.slides.length} slides</span>
+                        <span>{selectedVersion.slides?.length || 0} slides</span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -190,7 +190,7 @@ export function VersionHistory({
                 {/* Slide Thumbnails */}
                 <ScrollArea className="flex-1 p-4">
                   <div className="grid grid-cols-2 gap-4">
-                    {selectedVersion.slides.map((slide, index) => (
+                    {(selectedVersion.slides || []).map((slide, index) => (
                       <div key={slide.id} className="border rounded-lg overflow-hidden">
                         <div className="aspect-video bg-slate-50 p-4 flex flex-col">
                           <h4 className="font-medium text-sm mb-2">{slide.title}</h4>
