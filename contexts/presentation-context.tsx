@@ -106,11 +106,29 @@ function presentationReducer(
       };
 
     case 'ADD_CHAT_MESSAGE':
-      console.log('[Chat Fix Debug] ADD_CHAT_MESSAGE action processed:', {
-        currentChatMessages: state.chatMessages,
+      // Round 23 Fix: Check if message already exists to prevent duplicates
+      const messageExists = state.chatMessages.some(msg => 
+        (msg.id === action.payload.id) || 
+        (msg.content?.message === action.payload.content?.message && 
+         msg.timestamp === action.payload.timestamp &&
+         msg.type === action.payload.type)
+      );
+      
+      if (messageExists) {
+        console.log('[Round 23 Fix] Duplicate message detected, skipping:', {
+          messageId: action.payload.id,
+          content: action.payload.content?.message?.substring(0, 50) + '...',
+          type: action.payload.type
+        });
+        return state; // Don't add duplicate
+      }
+      
+      console.log('[Round 23 Fix] Adding new chat message:', {
+        currentCount: state.chatMessages.length,
         newMessage: action.payload,
         totalAfterAdd: state.chatMessages.length + 1
       });
+      
       return {
         ...state,
         chatMessages: [...state.chatMessages, action.payload]

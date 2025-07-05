@@ -31,10 +31,18 @@ export function ChatMessage({ message, onAction, onResponse }: ChatMessageProps)
   const [isExpanded, setIsExpanded] = useState(true);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
-  // Round 22 Fix: Add empty content validation
-  if (!message.content?.message || message.content.message.trim() === '') {
-    console.warn('[Round 22] Skipping empty message:', message);
-    return null;  // Don't render empty messages
+  // Round 22/23 Fix: Add empty content validation and filter "Unable to parse response"
+  if (!message.content?.message || 
+      message.content.message.trim() === '' ||
+      message.content.message.includes('Unable to parse response')) {
+    console.warn('[Round 23] Skipping invalid message:', {
+      type: message.type,
+      content: message.content?.message,
+      reason: !message.content?.message ? 'no content' : 
+              message.content.message.trim() === '' ? 'empty content' :
+              'contains "Unable to parse response"'
+    });
+    return null;  // Don't render empty or invalid messages
   }
 
   const handleTextResponse = () => {
@@ -162,7 +170,8 @@ export function ChatMessage({ message, onAction, onResponse }: ChatMessageProps)
               </div>
             )}
 
-            {/* Question Options */}
+            {/* Round 23 Fix: Remove option buttons from question messages
+                Backend requested questions display as regular messages without interactive elements
             {message.type === 'question' && message.content.options && (
               <div className="mt-3 space-y-2">
                 {message.content.options.map((option, index) => (
@@ -178,7 +187,7 @@ export function ChatMessage({ message, onAction, onResponse }: ChatMessageProps)
                   </Button>
                 ))}
               </div>
-            )}
+            )} */}
 
             {/* Round 22 Fix: Remove embedded input fields from question messages
                 Backend requested questions display as regular messages without inputs
@@ -207,7 +216,8 @@ export function ChatMessage({ message, onAction, onResponse }: ChatMessageProps)
               </Badge>
             )}
 
-            {/* Action Buttons */}
+            {/* Round 23 Fix: Remove action buttons from messages
+                All interactions should happen through the main chat input
             {message.actions && message.actions.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {message.actions.map((action) => (
@@ -221,7 +231,7 @@ export function ChatMessage({ message, onAction, onResponse }: ChatMessageProps)
                   </Button>
                 ))}
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </CardContent>

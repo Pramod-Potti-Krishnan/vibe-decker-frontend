@@ -108,35 +108,49 @@ function BuilderContent() {
     }
   }, [user])
 
+  // Round 23 Fix: Track processed messages to prevent duplication
+  const processedMessageIds = useRef(new Set<string>());
+  
   // Process director messages into presentation state
   useEffect(() => {
-    console.log('[Chat Fix Debug] Director messages processing triggered:', {
+    console.log('[Round 23 Fix] Director messages processing triggered:', {
       messageCount: directorMessages.length,
+      processedCount: processedMessageIds.current.size,
       messages: directorMessages
     });
     
     directorMessages.forEach((message, index) => {
-      console.log(`[Chat Fix Debug] Processing director message ${index + 1}:`, {
-        messageId: message.message_id,
-        type: message.type,
-        source: message.source,
-        hasChatData: !!message.chat_data,
-        chatData: message.chat_data,
-        hasSlideData: !!message.slide_data
-      });
-      
-      const actions = presentationActions.processDirectorMessage(message);
-      
-      console.log(`[Chat Fix Debug] Generated actions for message ${index + 1}:`, {
-        actionCount: actions.length,
-        actionTypes: actions.map(a => a.type),
-        actions: actions
-      });
-      
-      actions.forEach((action, actionIndex) => {
-        console.log(`[Chat Fix Debug] Dispatching action ${actionIndex + 1}:`, action);
-        dispatch(action);
-      });
+      // Round 23 Fix: Only process new messages
+      if (!processedMessageIds.current.has(message.message_id)) {
+        console.log(`[Round 23 Fix] Processing NEW director message ${index + 1}:`, {
+          messageId: message.message_id,
+          type: message.type,
+          source: message.source,
+          hasChatData: !!message.chat_data,
+          chatData: message.chat_data,
+          hasSlideData: !!message.slide_data
+        });
+        
+        // Mark as processed BEFORE dispatching to prevent race conditions
+        processedMessageIds.current.add(message.message_id);
+        
+        const actions = presentationActions.processDirectorMessage(message);
+        
+        console.log(`[Round 23 Fix] Generated actions for message ${index + 1}:`, {
+          actionCount: actions.length,
+          actionTypes: actions.map(a => a.type),
+          actions: actions
+        });
+        
+        actions.forEach((action, actionIndex) => {
+          console.log(`[Round 23 Fix] Dispatching action ${actionIndex + 1}:`, action);
+          dispatch(action);
+        });
+      } else {
+        console.log(`[Round 23 Fix] Skipping already processed message ${index + 1}:`, {
+          messageId: message.message_id
+        });
+      }
     })
   }, [directorMessages, dispatch])
 
