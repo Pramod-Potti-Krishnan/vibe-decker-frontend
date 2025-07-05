@@ -13,6 +13,17 @@ interface ProgressTrackerProps {
 }
 
 export function ProgressTracker({ progress, className, compact = false }: ProgressTrackerProps) {
+  // Round 19 Debug: Log progress data structure for validation
+  console.log('[Round 19 Progress Debug] Received data:', {
+    progress: progress,
+    progressType: typeof progress,
+    agentStatuses: progress?.agentStatuses,
+    agentStatusesType: typeof progress?.agentStatuses,
+    agentStatusesKeys: progress?.agentStatuses ? Object.keys(progress.agentStatuses) : null,
+    agentStatusesValues: progress?.agentStatuses ? Object.values(progress.agentStatuses) : null,
+    isObject: progress?.agentStatuses && typeof progress.agentStatuses === 'object' && !Array.isArray(progress.agentStatuses)
+  });
+
   if (compact) {
     return (
       <div className={cn("space-y-2", className)}>
@@ -45,7 +56,7 @@ export function ProgressTracker({ progress, className, compact = false }: Progre
       )}
 
       {/* Completed Steps */}
-      {progress.steps_completed.length > 0 && (
+      {progress.steps_completed && Array.isArray(progress.steps_completed) && progress.steps_completed.length > 0 && (
         <div className="space-y-2">
           <h5 className="text-xs font-medium text-gray-600">Completed</h5>
           <div className="space-y-1">
@@ -67,12 +78,12 @@ export function ProgressTracker({ progress, className, compact = false }: Progre
       )}
 
       {/* Agent Statuses */}
-      {progress.agentStatuses && progress.agentStatuses.length > 0 && (
+      {progress.agentStatuses && typeof progress.agentStatuses === 'object' && !Array.isArray(progress.agentStatuses) && Object.keys(progress.agentStatuses).length > 0 && (
         <div className="pt-2 border-t">
           <h5 className="text-xs font-medium text-gray-600 mb-2">Agent Activity</h5>
           <div className="space-y-1.5">
-            {progress.agentStatuses.map((agent) => (
-              <AgentStatusItem key={agent.agentId} agent={agent} />
+            {Object.entries(progress.agentStatuses).map(([agentName, status]) => (
+              <AgentStatusItem key={agentName} agentName={agentName} status={status} />
             ))}
           </div>
         </div>
@@ -81,32 +92,39 @@ export function ProgressTracker({ progress, className, compact = false }: Progre
   );
 }
 
-function AgentStatusItem({ agent }: { agent: ProgressInfo['agentStatuses'][0] }) {
+function AgentStatusItem({ agentName, status }: { agentName: string; status: string }) {
   const getStatusIcon = () => {
-    switch (agent.status) {
-      case 'working':
+    switch (status) {
+      case 'active':
         return <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />;
       case 'completed':
         return <CheckCircle className="h-3 w-3 text-green-500" />;
       case 'error':
         return <Circle className="h-3 w-3 text-red-500" />;
+      case 'pending':
       default:
         return <Circle className="h-3 w-3 text-gray-400" />;
     }
   };
 
+  // Convert backend agent names to display names
+  const getDisplayName = (name: string) => {
+    const nameMap: Record<string, string> = {
+      director: 'Director',
+      researcher: 'Researcher',
+      ux_architect: 'UX Architect',
+      visual_designer: 'Visual Designer',
+      data_analyst: 'Data Analyst',
+      ux_analyst: 'UX Analyst'
+    };
+    return nameMap[name] || name.charAt(0).toUpperCase() + name.slice(1);
+  };
+
   return (
     <div className="flex items-center gap-2">
       {getStatusIcon()}
-      <span className="text-xs text-gray-700 flex-1">{agent.agentName}</span>
-      {agent.currentTask && agent.status === 'working' && (
-        <span className="text-xs text-gray-500 truncate max-w-[150px]">
-          {agent.currentTask}
-        </span>
-      )}
-      {agent.progress !== undefined && agent.status === 'working' && (
-        <span className="text-xs text-gray-600">{agent.progress}%</span>
-      )}
+      <span className="text-xs text-gray-700 flex-1">{getDisplayName(agentName)}</span>
+      <span className="text-xs text-gray-500 capitalize">{status}</span>
     </div>
   );
 }

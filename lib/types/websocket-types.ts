@@ -178,7 +178,18 @@ export interface ProgressInfo {
   current_step: string;
   steps_completed: string[];
   estimated_time_remaining?: number;
+  // Round 19 fix: agentStatuses is an object, not array (backend confirmed)
+  agentStatuses?: {
+    director: AgentStatus;
+    researcher: AgentStatus;
+    ux_architect: AgentStatus;
+    visual_designer: AgentStatus;
+    data_analyst: AgentStatus;
+    ux_analyst: AgentStatus;
+  };
 }
+
+type AgentStatus = 'active' | 'pending' | 'completed' | 'error';
 
 // Type Guards
 export function isUserInputMessage(msg: any): msg is UserInputMessage {
