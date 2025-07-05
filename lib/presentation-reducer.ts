@@ -1,11 +1,43 @@
 import { PresentationState, PresentationAction } from '@/contexts/presentation-context';
-import { DirectorMessage } from '@/lib/types/websocket-types';
+import { DirectorMessage, ChatData } from '@/lib/types/websocket-types';
 import { 
   isStructureMessage, 
   isProgressUpdate,
   PresentationPhase,
   AgentStatus
 } from '@/lib/types/director-messages';
+
+// Round 21: Backend-approved helper function for content format compatibility
+const processChatContent = (content: any) => {
+  // Handle edge cases
+  if (!content) {
+    console.warn('[Round 21 Backend Coordination] Received null/undefined content, using empty message');
+    return {
+      message: '',
+      context: null,
+      options: null,
+      question_id: null
+    };
+  }
+  
+  // Handle both string and object formats as approved by backend team
+  if (typeof content === 'string') {
+    return {
+      message: content,
+      context: null,
+      options: null,
+      question_id: null
+    };
+  }
+  
+  // Already object format - ensure it has required properties
+  return {
+    message: content.message || '',
+    context: content.context || null,
+    options: content.options || null,
+    question_id: content.question_id || null
+  };
+};
 
 // Helper functions for processing director messages
 export function processDirectorMessage(
@@ -102,9 +134,29 @@ export const presentationActions = {
 
     // Process chat data
     if (message.chat_data) {
+      // Round 21 Phase 1.1: Backend-approved compatibility layer for string/object content
+      const processedContent = processChatContent(message.chat_data.content);
+      const processedChatData = {
+        ...message.chat_data,
+        content: processedContent
+      };
+      
+      // Round 21 Phase 1.2: Enhanced logging requested by backend team
+      console.log('[Round 21 Backend Coordination] Message received:', {
+        contentType: typeof message.chat_data.content,
+        contentFormat: typeof message.chat_data.content === 'string' ? 'string' : 'object',
+        hasMessage: typeof message.chat_data.content === 'object' ? 
+          !!message.chat_data.content?.message : 'N/A',
+        messageLength: typeof message.chat_data.content === 'string' ? 
+          message.chat_data.content.length : 
+          message.chat_data.content?.message?.length || 0,
+        convertedContent: processedContent,
+        messageType: message.chat_data.type
+      });
+      
       actions.push({
         type: 'ADD_CHAT_MESSAGE',
-        payload: message.chat_data
+        payload: processedChatData
       });
 
       // Process progress
