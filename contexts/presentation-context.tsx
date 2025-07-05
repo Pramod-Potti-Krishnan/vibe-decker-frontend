@@ -106,26 +106,34 @@ function presentationReducer(
       };
 
     case 'ADD_CHAT_MESSAGE':
-      // Round 23 Fix: Check if message already exists to prevent duplicates
-      const messageExists = state.chatMessages.some(msg => 
-        (msg.id === action.payload.id) || 
-        (msg.content?.message === action.payload.content?.message && 
-         msg.timestamp === action.payload.timestamp &&
-         msg.type === action.payload.type)
-      );
+      // Round 24 Fix: Improved deduplication logic that handles missing IDs
+      const messageExists = state.chatMessages.some(msg => {
+        // Only check ID-based duplicates if BOTH have IDs
+        if (msg.id && action.payload.id) {
+          return msg.id === action.payload.id;
+        }
+        
+        // For messages without IDs, check content + timestamp + type
+        // This prevents the undefined === undefined issue
+        return msg.content?.message === action.payload.content?.message && 
+               msg.timestamp === action.payload.timestamp &&
+               msg.type === action.payload.type;
+      });
       
       if (messageExists) {
-        console.log('[Round 23 Fix] Duplicate message detected, skipping:', {
+        console.log('[Round 24 Fix] Duplicate message detected, skipping:', {
           messageId: action.payload.id,
+          hasId: !!action.payload.id,
           content: action.payload.content?.message?.substring(0, 50) + '...',
           type: action.payload.type
         });
         return state; // Don't add duplicate
       }
       
-      console.log('[Round 23 Fix] Adding new chat message:', {
+      console.log('[Round 24 Fix] Adding new chat message:', {
+        messageId: action.payload.id,
+        hasId: !!action.payload.id,
         currentCount: state.chatMessages.length,
-        newMessage: action.payload,
         totalAfterAdd: state.chatMessages.length + 1
       });
       

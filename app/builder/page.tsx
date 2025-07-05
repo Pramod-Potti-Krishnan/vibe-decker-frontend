@@ -199,6 +199,8 @@ function BuilderContent() {
 
   // Helper function to create user message in ChatData format
   const createUserMessage = useCallback((text: string): ChatData => ({
+    // Round 24 Fix: Add unique ID to user messages
+    id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'user_input',
     content: {
       message: text

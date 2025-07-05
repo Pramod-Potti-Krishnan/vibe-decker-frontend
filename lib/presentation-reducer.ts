@@ -138,6 +138,8 @@ export const presentationActions = {
       const processedContent = processChatContent(message.chat_data.content);
       const processedChatData = {
         ...message.chat_data,
+        // Round 24 Fix: Map backend's message_id to frontend's id field
+        id: message.message_id || `backend_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         content: processedContent
       };
       
